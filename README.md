@@ -22,9 +22,10 @@ pytest
 
 ## Docs
 
+- [PRD](docs/plans/2026-03-13-prd.md)
 - [Kanban Design](docs/plans/2025-03-13-kanban-design.md)
 - [TDD Plan](docs/plans/2025-03-13-tdd-plan-design.md)
-- [Implementation Plan](docs/plans/2025-03-13-implementation-plan.md)
+- [Implementation Plan](docs/plans/2026-03-13-implementation-plan.md)
 
 ## License
 

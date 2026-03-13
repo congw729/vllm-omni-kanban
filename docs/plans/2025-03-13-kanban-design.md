@@ -1,7 +1,8 @@
 # vLLM-Omni Kanban Design Document
 
 **Date:** 2025-03-13
-**Status:** Approved
+**Last Updated:** 2026-03-13
+**Status:** Approved (v2 — revised)
 **Author:** Design brainstorming session
 
 ## Overview
@@ -69,23 +70,28 @@ vllm-omni-kanban/
 │       ├── build-dashboard.yml    # Build & deploy MkDocs to GitHub Pages
 │       └── process-results.yml    # Triggered when new results arrive
 ├── data/
-│   ├── results.json               # All CI results (90-day rolling)
+│   ├── results/                   # Per-date CI results (sharded for efficiency)
+│   │   └── 2026-03-13.json        # One file per day
+│   ├── index.json                 # Lightweight index: last_updated, available dates
 │   ├── config.json                # Hardware, models, thresholds config
 │   └── alerts.json                # Alert history
 ├── docs/
 │   ├── index.md                   # Dashboard homepage
 │   ├── reports/
-│   │   └── 2025-03-13.md          # Daily report (auto-generated)
+│   │   └── 2026-03-13.md          # Daily report (auto-generated, permanent archive)
 │   ├── assets/
-│   │   └── charts/                # Generated chart data/HTML
-│   └── overrides/                 # MkDocs customizations
+│   │   └── charts/                # Generated ECharts JSON data files
+│   └── overrides/
+│       └── main.html              # MkDocs theme override (injects ECharts JS)
 ├── scripts/
-│   ├── process_results.py         # Parse CI data, generate reports
-│   ├── generate_charts.py         # Create chart data for ECharts
-│   └── check_alerts.py            # Compare metrics vs thresholds
-├── mkdocs.yml                     # MkDocs configuration
+│   ├── process_results.py         # Parse CI data, deduplicate, prune, generate reports
+│   ├── generate_charts.py         # Create ECharts JSON data files
+│   └── check_alerts.py            # Compare metrics vs thresholds, send notifications
+├── mkdocs.yml                     # MkDocs configuration (with macros plugin)
 └── requirements.txt               # Python dependencies
 ```
+
+> **Note on storage sharding:** Results are stored as per-date files (`data/results/YYYY-MM-DD.json`) rather than a single `results.json`. This keeps git diffs small (one file changed per day), prevents unbounded file growth, and allows efficient reads by date range.
 
 ## Data Format
 
@@ -120,17 +126,30 @@ vllm-omni-kanban/
 }
 ```
 
-### Aggregated results.json Structure
+### Per-Date File Structure (`data/results/YYYY-MM-DD.json`)
 
 ```json
 {
-  "last_updated": "2025-03-13T06:00:00+08:00",
-  "retention_days": 90,
+  "date": "2026-03-13",
   "results": [
-    // array of CI results, pruned to 90 days
+    // array of CI results for this date
   ]
 }
 ```
+
+### Index File (`data/index.json`)
+
+```json
+{
+  "last_updated": "2026-03-13T06:00:00+08:00",
+  "retention_days": 90,
+  "dates": ["2026-03-13", "2026-03-12", "..."]
+}
+```
+
+> **Deduplication:** `process_results.py` checks for existing `(date, hardware, model)` tuples before appending. Duplicate pushes (e.g., CI retry) are silently ignored with a log warning.
+
+> **90-day pruning:** On each run, `index.json` is updated and date files older than 90 days are deleted. Daily reports in `docs/reports/` are **not** pruned — they serve as a permanent archive.
 
 ### Per-Model Metric Registry
 
@@ -145,7 +164,35 @@ The config defines which metrics are required/optional for each model:
       "metrics": {
         "required": ["pass_rate", "latency_p99_ms", "throughput_tokens_per_sec"],
         "optional": ["image_quality_score", "generation_time_ms"]
-      }
+      },
+      "alert_overrides": {}
+    },
+    "Qwen-image-edit": {
+      "display_name": "Qwen Image Edit",
+      "category": "image_editing",
+      "metrics": {
+        "required": ["pass_rate", "latency_p99_ms"],
+        "optional": ["edit_quality_score", "generation_time_ms"]
+      },
+      "alert_overrides": {}
+    },
+    "WAN2.2": {
+      "display_name": "WAN 2.2",
+      "category": "video_generation",
+      "metrics": {
+        "required": ["pass_rate", "latency_p99_ms"],
+        "optional": ["video_quality_score", "generation_time_ms"]
+      },
+      "alert_overrides": {}
+    },
+    "Qwen3-Omni": {
+      "display_name": "Qwen3 Omni",
+      "category": "multimodal",
+      "metrics": {
+        "required": ["pass_rate", "latency_p99_ms", "ttft_ms", "throughput_tokens_per_sec"],
+        "optional": ["benchmark_score"]
+      },
+      "alert_overrides": {}
     },
     "Qwen3-TTS": {
       "display_name": "Qwen3 TTS",
@@ -153,31 +200,38 @@ The config defines which metrics are required/optional for each model:
       "metrics": {
         "required": ["pass_rate", "latency_p99_ms"],
         "optional": ["real_time_factor", "audio_quality_mos", "speaker_similarity"]
+      },
+      "alert_overrides": {
+        "latency_p99_ms_critical": 2000
       }
     }
-    // ... other models
   }
 }
 ```
 
-**Extensibility:** New models and metrics can be added by updating config.json and including them in CI results. No code changes required.
+**Extensibility:** New models and metrics can be added by updating `config.json` and including them in CI results. No code changes required. Use `alert_overrides` to set per-model thresholds that differ from global defaults.
 
 ## CI/CD Workflow
 
 ### Data Push (from vLLM-omni CI)
 
+> **Payload size constraint:** GitHub `repository_dispatch` has a 10KB limit on `client_payload`. Each CI result is ~1–2KB (single model/hardware pair). CI should push **one dispatch per result** rather than batching all results into one payload to stay within limits.
+
 ```yaml
-# In vLLM-omni repo's CI, after tests complete:
+# In vLLM-omni repo's CI, after tests complete (one call per model/hardware):
 - name: Push results to kanban repo
   run: |
+    PAYLOAD=$(python scripts/build_kanban_payload.py)  # builds single result JSON
     curl -X POST \
       -H "Authorization: token ${{ secrets.KANBAN_TOKEN }}" \
       -H "Content-Type: application/json" \
       https://api.github.com/repos/YOUR-ORG/vllm-omni-kanban/dispatches \
-      -d '{"event_type": "ci_results", "client_payload": {...}}'
+      -d "{\"event_type\": \"ci_results\", \"client_payload\": ${PAYLOAD}}"
 ```
 
 ### Process & Deploy (this repo)
+
+The workflow is split into three jobs so failures in alerting or deployment don't block each other, and so errors are surfaced clearly.
 
 ```yaml
 # .github/workflows/process-results.yml
@@ -196,18 +250,52 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install -r requirements.txt
-      - run: python scripts/process_results.py
-      - run: python scripts/generate_charts.py
-      - run: python scripts/check_alerts.py
+      - name: Validate input schema
+        run: python scripts/process_results.py --validate-only
+      - name: Process and store results
+        run: python scripts/process_results.py
+      - name: Generate chart data
+        run: python scripts/generate_charts.py
+      - name: Commit data changes
+        run: |
+          git config user.name "CI Bot"
+          git config user.email "ci-bot@github.com"
+          git add data/ docs/reports/
+          git diff --staged --quiet || git commit -m "chore: update results $(date -u +%Y-%m-%d)"
+          git push
+
+  alert:
+    needs: process
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main  # pull latest after process job committed
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - name: Check thresholds and send alerts
+        run: python scripts/check_alerts.py
         env:
           WECHAT_WEBHOOK: ${{ secrets.WECHAT_WEBHOOK }}
-          EMAIL_SMTP: ${{ secrets.EMAIL_SMTP }}
-      - run: |
-          git config user.name "CI Bot"
-          git add data/ docs/
-          git diff --quiet && git diff --staged --quiet || git commit -m "chore: update results"
-          git push
-      - run: mkdocs gh-deploy --force
+          EMAIL_SMTP_HOST: ${{ secrets.EMAIL_SMTP_HOST }}
+          EMAIL_SMTP_USER: ${{ secrets.EMAIL_SMTP_USER }}
+          EMAIL_SMTP_PASS: ${{ secrets.EMAIL_SMTP_PASS }}
+
+  deploy:
+    needs: process
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main  # pull latest after process job committed
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - name: Build and deploy MkDocs
+        run: mkdocs gh-deploy --force
 ```
 
 ## Dashboard Pages
@@ -229,11 +317,36 @@ jobs:
 - Alerts triggered that day
 - Trend comparison vs 7-day average
 
+### ECharts Integration
+
+MkDocs renders Markdown to static HTML. ECharts charts are embedded via the `mkdocs-macros` plugin, which allows Jinja2 macros in Markdown files. `generate_charts.py` writes pre-computed ECharts option JSON files to `docs/assets/charts/`, and a macro renders them into `<div>` containers.
+
+**`mkdocs.yml` additions:**
+```yaml
+theme:
+  name: material
+  custom_dir: docs/overrides
+
+plugins:
+  - macros
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js
+  - assets/js/render_charts.js
+```
+
+**Macro usage in Markdown (`docs/index.md`):**
+```markdown
+{{ render_chart("pass_rate_trend_7d") }}
+```
+
+**`docs/overrides/main.html`** extends the Material theme to include the ECharts JS bundle and the `render_charts.js` initializer that reads the pre-computed JSON and mounts each chart into its container div.
+
 ### Chart Types (ECharts)
 
-- **Line charts** — Time series for trends
-- **Heatmap** — Model × Hardware matrix
-- **Bar charts** — Hardware comparison for single model
+- **Line charts** — Time series for pass rate, latency trends (7-day, 30-day)
+- **Heatmap** — Model × Hardware matrix (color = pass rate)
+- **Bar charts** — Per-metric hardware comparison for a single model
 
 ## Alerting Rules
 
@@ -256,10 +369,29 @@ jobs:
 | Throughput | -15% relative |
 | Benchmark score | -5% relative |
 
+### Alert Cooldown (Suppression)
+
+To prevent alert fatigue, `check_alerts.py` tracks active alerts in `alerts.json`. An alert for the same `(hardware, model, metric, level)` combination is suppressed for **24 hours** after it was first sent. Once the metric recovers above the threshold, the cooldown is reset.
+
+```json
+// alerts.json entry
+{
+  "id": "h100-qwen3omni-latency_p99-critical",
+  "hardware": "NVIDIA-H100",
+  "model": "Qwen3-Omni",
+  "metric": "latency_p99_ms",
+  "level": "critical",
+  "first_triggered": "2026-03-13T06:00:00+08:00",
+  "last_triggered": "2026-03-13T06:00:00+08:00",
+  "suppressed_until": "2026-03-14T06:00:00+08:00",
+  "resolved": false
+}
+```
+
 ### Notification Channels
 
 - **WeChat (企业微信)** — Webhook-based
-- **Email** — SMTP-based
+- **Email** — SMTP-based (host/user/pass configured via separate secrets)
 
 ### Notification Format
 
@@ -280,33 +412,36 @@ Link: https://your-org.github.io/vllm-omni-kanban/
 ## Implementation Phases
 
 ### Phase 1: Foundation (Week 1)
-- Initialize repo structure
-- Set up MkDocs with Material theme
-- Define JSON schema for CI results
-- Implement `process_results.py` (append + prune logic)
-- Set up GitHub Pages deployment
+- Initialize repo structure with sharded `data/results/` layout
+- Set up MkDocs Material theme with macros plugin
+- Define and validate JSON schemas (CI result, index, config, alerts)
+- Implement `process_results.py` (validate → deduplicate → append → prune)
+- Write Phase 1 tests; achieve ≥80% coverage on `process_results.py`
+- Set up GitHub Pages deployment via `build-dashboard.yml`
 
 ### Phase 2: Dashboard & Visualization (Week 2)
-- Build homepage with summary cards and tables
-- Implement daily report generator
-- Add ECharts integration (line charts, heatmap)
-- Create `generate_charts.py`
+- Build homepage (`docs/index.md`) with summary cards, hardware grid, model matrix
+- Implement daily report generator (auto-creates `docs/reports/YYYY-MM-DD.md`)
+- Implement `generate_charts.py` (ECharts JSON output for line, heatmap, bar)
+- Wire ECharts via MkDocs macros + `docs/overrides/main.html`
+- Write Phase 2 tests; achieve ≥80% coverage on `generate_charts.py`
 
 ### Phase 3: CI Integration (Week 3)
-- Create `process-results.yml` workflow
-- Add `repository_dispatch` handler
-- Configure scheduled backup job (6:00 AM Beijing)
-- Test end-to-end with sample data
+- Create split `process-results.yml` workflow (process / alert / deploy jobs)
+- Add `repository_dispatch` handler with schema validation step
+- Configure scheduled fallback job (6:00 AM Beijing = UTC 22:00)
+- Test end-to-end with sample data using `act` or manual dispatch
 
 ### Phase 4: Alerting (Week 4)
-- Implement `check_alerts.py` with threshold logic
-- Add regression detection (7-day baseline)
-- Integrate WeChat webhook notifications
+- Implement `check_alerts.py`: absolute thresholds, regression detection (7-day baseline)
+- Add 24-hour alert cooldown / suppression logic
+- Handle sparse baseline (< 7 days): skip regression check, log warning
+- Integrate WeChat Enterprise webhook notifications
 - Integrate Email SMTP notifications
-- Add `alerts.json` logging
+- Write Phase 4 tests; achieve ≥95% coverage on `check_alerts.py`
 
 ### Phase 5: Polish & Docs (Week 5)
-- Add navigation, search, filtering
-- Write user documentation
-- Add contributor guide for extending metrics
-- Configure secrets in GitHub settings
+- Add MkDocs navigation, search, report archive index
+- Write contributor guide: how to add a new model, new metric, new hardware
+- Document secrets setup in GitHub repository settings
+- Final end-to-end smoke test with all 5 models × 5 hardware
