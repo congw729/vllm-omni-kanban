@@ -1,7 +1,7 @@
 {
   "latest_date": "2026-03-14",
-  "overall_pass_rate": 0.95,
-  "overall_latency_p99_ms": 150.0,
-  "latest_commit": "abc123def456",
-  "recent_alerts": 25
+  "overall_pass_rate": 0.9388,
+  "overall_latency_p99_ms": 480.5197,
+  "latest_commit": "3d035b74f8a3",
+  "recent_alerts": 58
 }

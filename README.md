@@ -5,7 +5,7 @@ Monitoring dashboard for vLLM multimodal model stability, performance, and accur
 ## Features
 
 - **Models:** Qwen-image, Qwen-Image-edit, WAN2.2, Qwen3-Omni, Qwen3-TTS
-- **Hardware:** NVIDIA A100/H100/H20, AMD MI300X, Ascend NPU A2/A3
+- **Hardware:** NVIDIA A100/H100/H20, AMD MI300X, Ascend NPU A2, Ascend NPU A3
 - **Metrics:** Pass rate, latency (p50/p99), throughput, TTFT, benchmark scores
 - **90-day rolling retention**, daily Markdown reports, alerts (absolute + regression), WeChat & Email notifications
 

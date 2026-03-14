@@ -1,9 +1,12 @@
 {
-  "title": {
-    "text": "Pass Rate (30d)"
-  },
   "tooltip": {
     "trigger": "axis"
+  },
+  "grid": {
+    "left": 56,
+    "right": 24,
+    "top": 36,
+    "bottom": 42
   },
   "xAxis": {
     "type": "category",
@@ -16,7 +19,10 @@
       "2026-03-12",
       "2026-03-13",
       "2026-03-14"
-    ]
+    ],
+    "axisLabel": {
+      "color": "#5b6775"
+    }
   },
   "yAxis": {
     "type": "value",
@@ -27,16 +33,20 @@
     {
       "type": "line",
       "data": [
-        0.95,
-        0.95,
-        0.95,
-        0.95,
-        0.95,
-        0.95,
-        0.95,
-        0.95
+        0.9363,
+        0.9229,
+        0.9389,
+        0.9401,
+        0.9411,
+        0.9405,
+        0.938,
+        0.9388
       ],
-      "smooth": true
+      "smooth": true,
+      "symbolSize": 7,
+      "lineStyle": {
+        "width": 3
+      }
     }
   ]
 }

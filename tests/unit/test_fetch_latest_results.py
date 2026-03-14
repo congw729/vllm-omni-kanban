@@ -18,7 +18,7 @@ def test_fetch_latest_results_success(sample_daily_batch: dict, monkeypatch) -> 
         lambda *args, **kwargs: FakeResponse(),
     )
     batch = fetch_batch("https://example.test/results.json")
-    assert len(batch) == 25
+    assert len(batch) == 30
 
 
 def test_fetch_latest_results_auth_header(sample_daily_batch: dict, monkeypatch) -> None:
@@ -37,5 +37,5 @@ def test_fetch_latest_results_auth_header(sample_daily_batch: dict, monkeypatch)
 
     monkeypatch.setattr("scripts.fetch_latest_results.requests.get", fake_get)
     batch = fetch_batch("https://example.test/results.json", token="secret")
-    assert len(batch) == 25
+    assert len(batch) == 30
     assert captured["headers"]["Authorization"] == "Bearer secret"

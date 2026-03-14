@@ -27,3 +27,5 @@ nav:
 extra_javascript:
   - https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js
   - assets/js/render_charts.js
+extra_css:
+  - assets/stylesheets/dashboard.css

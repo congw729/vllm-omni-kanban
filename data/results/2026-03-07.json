@@ -3,676 +3,841 @@
   "results": [
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
+      "commit": "2c57f7c19162",
       "hardware": "NVIDIA-A100",
       "model": "Qwen-image",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.9772,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 199.5,
+          "latency_p50_ms": 82.35,
+          "throughput_tokens_per_sec": 1630.66,
+          "ttft_ms": 95.29
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.7273
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 4.63
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
+      "commit": "2c57f7c19162",
       "hardware": "NVIDIA-H100",
       "model": "Qwen-image",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.9604,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 349.54,
+          "latency_p50_ms": 98.51,
+          "throughput_tokens_per_sec": 1711.54,
+          "ttft_ms": 161.11
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.8556
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 4.05
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
+      "commit": "2c57f7c19162",
       "hardware": "NVIDIA-H20",
       "model": "Qwen-image",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.9085,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 229.18,
+          "latency_p50_ms": 66.13,
+          "throughput_tokens_per_sec": 999.06,
+          "ttft_ms": 162.54
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.8651
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 4.43
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
+      "commit": "2c57f7c19162",
       "hardware": "AMD-MI300X",
       "model": "Qwen-image",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.9107,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 360.05,
+          "latency_p50_ms": 124.21,
+          "throughput_tokens_per_sec": 1269.61,
+          "ttft_ms": 137.56
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.8025
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 4.32
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
-      "hardware": "Ascend-A2A3",
+      "commit": "2c57f7c19162",
+      "hardware": "Ascend-A2",
       "model": "Qwen-image",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.9552,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 293.68,
+          "latency_p50_ms": 127.48,
+          "throughput_tokens_per_sec": 1091.8,
+          "ttft_ms": 121.33
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.7346
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 4.33
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
+      "commit": "2c57f7c19162",
+      "hardware": "Ascend-A3",
+      "model": "Qwen-image",
+      "metrics": {
+        "stability": {
+          "pass_rate": 0.9429,
+          "crash_count": 0,
+          "error_types": {
+            "timeout": 0,
+            "oom": 0
+          }
+        },
+        "performance": {
+          "latency_p99_ms": 552.1,
+          "latency_p50_ms": 206.9,
+          "throughput_tokens_per_sec": 1357.79,
+          "ttft_ms": 107.11
+        },
+        "accuracy": {
+          "benchmark_score": 0.8937
+        },
+        "custom": {
+          "audio_quality_mos": 4.22
+        }
+      }
+    },
+    {
+      "timestamp": "2026-03-07T06:00:00+08:00",
+      "commit": "13591777f477",
       "hardware": "NVIDIA-A100",
       "model": "Qwen-Image-edit",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.9793,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 396.65,
+          "latency_p50_ms": 171.07,
+          "throughput_tokens_per_sec": 1102.82,
+          "ttft_ms": 139.34
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.9176
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 3.88
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
+      "commit": "13591777f477",
       "hardware": "NVIDIA-H100",
       "model": "Qwen-Image-edit",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.9417,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 638.83,
+          "latency_p50_ms": 191.46,
+          "throughput_tokens_per_sec": 1663.67,
+          "ttft_ms": 71.11
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.916
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 4.64
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
+      "commit": "13591777f477",
       "hardware": "NVIDIA-H20",
       "model": "Qwen-Image-edit",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.9813,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 334.53,
+          "latency_p50_ms": 112.23,
+          "throughput_tokens_per_sec": 1586.46,
+          "ttft_ms": 160.28
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.9113
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 3.82
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
+      "commit": "13591777f477",
       "hardware": "AMD-MI300X",
       "model": "Qwen-Image-edit",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.9106,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 312.39,
+          "latency_p50_ms": 111.88,
+          "throughput_tokens_per_sec": 1274.12,
+          "ttft_ms": 80.57
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.7998
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 4.17
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
-      "hardware": "Ascend-A2A3",
+      "commit": "13591777f477",
+      "hardware": "Ascend-A2",
       "model": "Qwen-Image-edit",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.9727,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 322.28,
+          "latency_p50_ms": 123.0,
+          "throughput_tokens_per_sec": 1310.67,
+          "ttft_ms": 64.24
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.8196
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 4.02
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
+      "commit": "13591777f477",
+      "hardware": "Ascend-A3",
+      "model": "Qwen-Image-edit",
+      "metrics": {
+        "stability": {
+          "pass_rate": 0.8868,
+          "crash_count": 0,
+          "error_types": {
+            "timeout": 0,
+            "oom": 0
+          }
+        },
+        "performance": {
+          "latency_p99_ms": 555.97,
+          "latency_p50_ms": 212.62,
+          "throughput_tokens_per_sec": 967.6,
+          "ttft_ms": 129.23
+        },
+        "accuracy": {
+          "benchmark_score": 0.8149
+        },
+        "custom": {
+          "audio_quality_mos": 4.53
+        }
+      }
+    },
+    {
+      "timestamp": "2026-03-07T06:00:00+08:00",
+      "commit": "a67be332ce78",
       "hardware": "NVIDIA-A100",
       "model": "WAN2.2",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.8945,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 528.51,
+          "latency_p50_ms": 221.14,
+          "throughput_tokens_per_sec": 1394.92,
+          "ttft_ms": 106.01
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.8404
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 4.32
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
+      "commit": "a67be332ce78",
       "hardware": "NVIDIA-H100",
       "model": "WAN2.2",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.8886,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 682.54,
+          "latency_p50_ms": 277.75,
+          "throughput_tokens_per_sec": 1232.75,
+          "ttft_ms": 57.01
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.8625
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 4.63
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
+      "commit": "a67be332ce78",
       "hardware": "NVIDIA-H20",
       "model": "WAN2.2",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.8896,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 367.53,
+          "latency_p50_ms": 138.51,
+          "throughput_tokens_per_sec": 1744.97,
+          "ttft_ms": 150.68
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.7931
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 4.02
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
+      "commit": "a67be332ce78",
       "hardware": "AMD-MI300X",
       "model": "WAN2.2",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
-          "crash_count": 0,
+          "pass_rate": 0.8876,
+          "crash_count": 1,
           "error_types": {
-            "timeout": 0
+            "timeout": 1,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 251.11,
+          "latency_p50_ms": 109.47,
+          "throughput_tokens_per_sec": 1548.87,
+          "ttft_ms": 144.68
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.8925
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 4.3
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
-      "hardware": "Ascend-A2A3",
+      "commit": "a67be332ce78",
+      "hardware": "Ascend-A2",
       "model": "WAN2.2",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.9717,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 480.14,
+          "latency_p50_ms": 162.51,
+          "throughput_tokens_per_sec": 1109.97,
+          "ttft_ms": 54.17
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.9377
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 4.47
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
+      "commit": "a67be332ce78",
+      "hardware": "Ascend-A3",
+      "model": "WAN2.2",
+      "metrics": {
+        "stability": {
+          "pass_rate": 0.9499,
+          "crash_count": 0,
+          "error_types": {
+            "timeout": 0,
+            "oom": 0
+          }
+        },
+        "performance": {
+          "latency_p99_ms": 214.23,
+          "latency_p50_ms": 73.03,
+          "throughput_tokens_per_sec": 1435.57,
+          "ttft_ms": 106.3
+        },
+        "accuracy": {
+          "benchmark_score": 0.9016
+        },
+        "custom": {
+          "audio_quality_mos": 4.55
+        }
+      }
+    },
+    {
+      "timestamp": "2026-03-07T06:00:00+08:00",
+      "commit": "90763a8912d3",
       "hardware": "NVIDIA-A100",
       "model": "Qwen3-Omni",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.8996,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 341.28,
+          "latency_p50_ms": 110.35,
+          "throughput_tokens_per_sec": 1157.86,
+          "ttft_ms": 45.22
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.7875
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 4.07
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
+      "commit": "90763a8912d3",
       "hardware": "NVIDIA-H100",
       "model": "Qwen3-Omni",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.9154,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 283.74,
+          "latency_p50_ms": 84.75,
+          "throughput_tokens_per_sec": 1352.62,
+          "ttft_ms": 116.63
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.9268
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 3.9
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
+      "commit": "90763a8912d3",
       "hardware": "NVIDIA-H20",
       "model": "Qwen3-Omni",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.9358,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 309.7,
+          "latency_p50_ms": 112.57,
+          "throughput_tokens_per_sec": 1120.28,
+          "ttft_ms": 57.67
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.8799
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 3.92
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
+      "commit": "90763a8912d3",
       "hardware": "AMD-MI300X",
       "model": "Qwen3-Omni",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.9602,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 242.26,
+          "latency_p50_ms": 101.83,
+          "throughput_tokens_per_sec": 1522.56,
+          "ttft_ms": 82.08
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.7607
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 4.59
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
-      "hardware": "Ascend-A2A3",
+      "commit": "90763a8912d3",
+      "hardware": "Ascend-A2",
       "model": "Qwen3-Omni",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.9293,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 220.35,
+          "latency_p50_ms": 81.05,
+          "throughput_tokens_per_sec": 1761.34,
+          "ttft_ms": 104.45
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.9077
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 4.01
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
+      "commit": "90763a8912d3",
+      "hardware": "Ascend-A3",
+      "model": "Qwen3-Omni",
+      "metrics": {
+        "stability": {
+          "pass_rate": 0.9438,
+          "crash_count": 0,
+          "error_types": {
+            "timeout": 0,
+            "oom": 0
+          }
+        },
+        "performance": {
+          "latency_p99_ms": 633.13,
+          "latency_p50_ms": 180.75,
+          "throughput_tokens_per_sec": 1468.03,
+          "ttft_ms": 89.2
+        },
+        "accuracy": {
+          "benchmark_score": 0.9112
+        },
+        "custom": {
+          "audio_quality_mos": 4.5
+        }
+      }
+    },
+    {
+      "timestamp": "2026-03-07T06:00:00+08:00",
+      "commit": "adb74452729d",
       "hardware": "NVIDIA-A100",
       "model": "Qwen3-TTS",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.8835,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 515.32,
+          "latency_p50_ms": 186.06,
+          "throughput_tokens_per_sec": 1792.42,
+          "ttft_ms": 138.31
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.7543
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 4.46
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
+      "commit": "adb74452729d",
       "hardware": "NVIDIA-H100",
       "model": "Qwen3-TTS",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.9281,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 651.73,
+          "latency_p50_ms": 225.36,
+          "throughput_tokens_per_sec": 1166.05,
+          "ttft_ms": 124.53
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.9496
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 4.04
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
+      "commit": "adb74452729d",
       "hardware": "NVIDIA-H20",
       "model": "Qwen3-TTS",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.9501,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 336.0,
+          "latency_p50_ms": 96.2,
+          "throughput_tokens_per_sec": 1252.73,
+          "ttft_ms": 127.41
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.9572
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 4.14
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
+      "commit": "adb74452729d",
       "hardware": "AMD-MI300X",
       "model": "Qwen3-TTS",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.9875,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 649.56,
+          "latency_p50_ms": 184.63,
+          "throughput_tokens_per_sec": 1002.42,
+          "ttft_ms": 86.03
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.7578
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 3.97
         }
       }
     },
     {
       "timestamp": "2026-03-07T06:00:00+08:00",
-      "commit": "abc123def456",
-      "hardware": "Ascend-A2A3",
+      "commit": "adb74452729d",
+      "hardware": "Ascend-A2",
       "model": "Qwen3-TTS",
       "metrics": {
         "stability": {
-          "pass_rate": 0.95,
+          "pass_rate": 0.9696,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0
+            "timeout": 0,
+            "oom": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 100,
-          "latency_p50_ms": 120,
-          "throughput_tokens_per_sec": 1500,
-          "ttft_ms": 85
+          "latency_p99_ms": 473.17,
+          "latency_p50_ms": 167.08,
+          "throughput_tokens_per_sec": 1286.86,
+          "ttft_ms": 58.33
         },
         "accuracy": {
-          "benchmark_score": 0.89
+          "benchmark_score": 0.8487
         },
         "custom": {
-          "audio_quality_mos": 4.2
+          "audio_quality_mos": 4.38
+        }
+      }
+    },
+    {
+      "timestamp": "2026-03-07T06:00:00+08:00",
+      "commit": "adb74452729d",
+      "hardware": "Ascend-A3",
+      "model": "Qwen3-TTS",
+      "metrics": {
+        "stability": {
+          "pass_rate": 0.978,
+          "crash_count": 0,
+          "error_types": {
+            "timeout": 0,
+            "oom": 0
+          }
+        },
+        "performance": {
+          "latency_p99_ms": 191.58,
+          "latency_p50_ms": 71.76,
+          "throughput_tokens_per_sec": 1022.22,
+          "ttft_ms": 159.64
+        },
+        "accuracy": {
+          "benchmark_score": 0.7641
+        },
+        "custom": {
+          "audio_quality_mos": 4.55
         }
       }
     }

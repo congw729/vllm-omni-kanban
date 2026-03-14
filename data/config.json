@@ -5,7 +5,8 @@
     "NVIDIA-H100": {"display_name": "NVIDIA H100"},
     "NVIDIA-H20": {"display_name": "NVIDIA H20"},
     "AMD-MI300X": {"display_name": "AMD MI300X"},
-    "Ascend-A2A3": {"display_name": "Ascend NPU A2/A3"}
+    "Ascend-A2": {"display_name": "Ascend NPU A2"},
+    "Ascend-A3": {"display_name": "Ascend NPU A3"}
   },
   "models": {
     "Qwen-image": {

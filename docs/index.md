@@ -1,31 +1,108 @@
 # vLLM-Omni Kanban
 
-This dashboard tracks one daily snapshot per model and hardware combination for vLLM-omni multimodal CI.
+<p class="dashboard-intro">
+This dashboard tracks one daily snapshot per model and hardware combination for vLLM-omni multimodal CI. The homepage now starts with model-specific 7-day performance views so you can inspect latency, throughput, TTFT, and benchmark movement before scanning stability rollups.
+</p>
 
-## Snapshot
+## 7-Day Model Performance
 
-- Retention: 90 days
-- Ingestion: `repository_dispatch` and scheduled external fetch
-- Alerting: pass rate, latency, crash count, and baseline regressions
-- Scope: 5 multimodal models across 5 hardware platforms
+<div class="summary-badges">
+  <span>90-day retention</span>
+  <span>Dispatch + scheduled fetch</span>
+  <span>Regression-aware alerting</span>
+  <span>5 models x 6 hardware targets</span>
+</div>
 
-## Charts
+<section class="model-section">
+<h3>Qwen Image</h3>
+<p class="section-note">Image-generation performance across the hardware fleet for the last 7 days.</p>
+<div class="chart-grid">
+<div class="chart-card">
+<h4>Latency P99</h4>
+<div class="chart-frame" id="chart-qwen-image-latency" data-chart-src="assets/charts/qwen_image_latency_p99_ms_7d.json"></div>
+</div>
+<div class="chart-card">
+<h4>Throughput</h4>
+<div class="chart-frame" id="chart-qwen-image-throughput" data-chart-src="assets/charts/qwen_image_throughput_tokens_per_sec_7d.json"></div>
+</div>
+</div>
+</section>
 
-### Pass Rate (7d)
+<section class="model-section">
+<h3>Qwen Image Edit</h3>
+<p class="section-note">Editing latency trends for the current daily-snapshot window.</p>
+<div class="chart-grid">
+<div class="chart-card">
+<h4>Latency P99</h4>
+<div class="chart-frame" id="chart-qwen-image-edit-latency" data-chart-src="assets/charts/qwen_image_edit_latency_p99_ms_7d.json"></div>
+</div>
+</div>
+</section>
 
-<div id="chart-pass-rate-7d" data-chart-src="assets/charts/pass_rate_trend_7d.json" style="height: 320px;"></div>
+<section class="model-section">
+<h3>WAN 2.2</h3>
+<p class="section-note">Video-generation latency over the past 7 daily runs.</p>
+<div class="chart-grid">
+<div class="chart-card">
+<h4>Latency P99</h4>
+<div class="chart-frame" id="chart-wan-latency" data-chart-src="assets/charts/wan22_latency_p99_ms_7d.json"></div>
+</div>
+</div>
+</section>
 
-### Pass Rate (30d)
+<section class="model-section">
+<h3>Qwen3 Omni</h3>
+<p class="section-note">Detailed multimodal performance panel across latency, throughput, TTFT, and benchmark movement.</p>
+<div class="chart-grid">
+<div class="chart-card">
+<h4>Latency P99</h4>
+<div class="chart-frame" id="chart-qwen3-omni-latency" data-chart-src="assets/charts/qwen3_omni_latency_p99_ms_7d.json"></div>
+</div>
+<div class="chart-card">
+<h4>Throughput</h4>
+<div class="chart-frame" id="chart-qwen3-omni-throughput" data-chart-src="assets/charts/qwen3_omni_throughput_tokens_per_sec_7d.json"></div>
+</div>
+<div class="chart-card">
+<h4>TTFT</h4>
+<div class="chart-frame" id="chart-qwen3-omni-ttft" data-chart-src="assets/charts/qwen3_omni_ttft_ms_7d.json"></div>
+</div>
+<div class="chart-card">
+<h4>Benchmark Score</h4>
+<div class="chart-frame" id="chart-qwen3-omni-benchmark" data-chart-src="assets/charts/qwen3_omni_benchmark_score_7d.json"></div>
+</div>
+</div>
+</section>
 
-<div id="chart-pass-rate-30d" data-chart-src="assets/charts/pass_rate_trend_30d.json" style="height: 320px;"></div>
+<section class="model-section">
+<h3>Qwen3 TTS</h3>
+<p class="section-note">Audio-synthesis latency trends for the last 7 daily snapshots.</p>
+<div class="chart-grid">
+<div class="chart-card">
+<h4>Latency P99</h4>
+<div class="chart-frame" id="chart-qwen3-tts-latency" data-chart-src="assets/charts/qwen3_tts_latency_p99_ms_7d.json"></div>
+</div>
+</div>
+</section>
 
-### Latency P99 (7d)
+## Stability Follow-Up
 
-<div id="chart-latency-7d" data-chart-src="assets/charts/latency_p99_trend_7d.json" style="height: 320px;"></div>
+<p class="section-note">Use this section to sanity-check overall health after reviewing model-specific performance movement.</p>
 
-### Model x Hardware Heatmap
+<div class="follow-up-grid">
+<div class="chart-card">
+<h4>Pass Rate (7d)</h4>
+<div class="chart-frame" id="chart-pass-rate-7d" data-chart-src="assets/charts/pass_rate_trend_7d.json"></div>
+</div>
+<div class="chart-card">
+<h4>Pass Rate (30d)</h4>
+<div class="chart-frame" id="chart-pass-rate-30d" data-chart-src="assets/charts/pass_rate_trend_30d.json"></div>
+</div>
+</div>
 
-<div id="chart-heatmap" data-chart-src="assets/charts/pass_rate_heatmap.json" style="height: 420px;"></div>
+<div class="standalone-panel">
+<h4>Pass Rate Heatmap</h4>
+<div class="chart-frame chart-frame-tall" id="chart-heatmap" data-chart-src="assets/charts/pass_rate_heatmap.json"></div>
+</div>
 
 ## Recent Alerts
 

@@ -1,9 +1,12 @@
 {
-  "title": {
-    "text": "Latency P99 (7d)"
-  },
   "tooltip": {
     "trigger": "axis"
+  },
+  "grid": {
+    "left": 56,
+    "right": 24,
+    "top": 36,
+    "bottom": 42
   },
   "xAxis": {
     "type": "category",
@@ -15,7 +18,10 @@
       "2026-03-12",
       "2026-03-13",
       "2026-03-14"
-    ]
+    ],
+    "axisLabel": {
+      "color": "#5b6775"
+    }
   },
   "yAxis": {
     "type": "value",
@@ -26,15 +32,19 @@
     {
       "type": "line",
       "data": [
-        100.0,
-        100.0,
-        100.0,
-        100.0,
-        100.0,
-        100.0,
-        150.0
+        459.7983,
+        419.8373,
+        404.489,
+        432.1117,
+        480.968,
+        435.077,
+        480.5197
       ],
-      "smooth": true
+      "smooth": true,
+      "symbolSize": 7,
+      "lineStyle": {
+        "width": 3
+      }
     }
   ]
 }

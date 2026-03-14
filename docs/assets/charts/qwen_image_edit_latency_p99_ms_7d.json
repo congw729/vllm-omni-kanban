@@ -1,0 +1,129 @@
+{
+  "tooltip": {
+    "trigger": "axis"
+  },
+  "legend": {
+    "type": "scroll",
+    "top": 0,
+    "left": 0,
+    "right": 0,
+    "textStyle": {
+      "fontSize": 12
+    }
+  },
+  "grid": {
+    "left": 56,
+    "right": 24,
+    "top": 54,
+    "bottom": 42
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "2026-03-08",
+      "2026-03-09",
+      "2026-03-10",
+      "2026-03-11",
+      "2026-03-12",
+      "2026-03-13",
+      "2026-03-14"
+    ],
+    "axisLabel": {
+      "color": "#5b6775"
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "min": null,
+    "max": null,
+    "axisLabel": {
+      "color": "#5b6775"
+    }
+  },
+  "series": [
+    {
+      "name": "NVIDIA A100",
+      "type": "line",
+      "data": [
+        627.99,
+        423.88,
+        346.85,
+        317.6,
+        324.74,
+        223.77,
+        677.75
+      ],
+      "smooth": true
+    },
+    {
+      "name": "NVIDIA H100",
+      "type": "line",
+      "data": [
+        258.3,
+        186.69,
+        474.14,
+        421.55,
+        558.77,
+        271.77,
+        680.82
+      ],
+      "smooth": true
+    },
+    {
+      "name": "NVIDIA H20",
+      "type": "line",
+      "data": [
+        232.75,
+        478.1,
+        365.65,
+        294.56,
+        451.15,
+        596.27,
+        619.36
+      ],
+      "smooth": true
+    },
+    {
+      "name": "AMD MI300X",
+      "type": "line",
+      "data": [
+        482.19,
+        382.63,
+        481.2,
+        477.88,
+        371.54,
+        365.39,
+        417.88
+      ],
+      "smooth": true
+    },
+    {
+      "name": "Ascend NPU A2",
+      "type": "line",
+      "data": [
+        696.27,
+        675.56,
+        597.91,
+        458.41,
+        638.91,
+        184.11,
+        674.1
+      ],
+      "smooth": true
+    },
+    {
+      "name": "Ascend NPU A3",
+      "type": "line",
+      "data": [
+        289.34,
+        602.58,
+        443.39,
+        461.2,
+        370.63,
+        659.87,
+        558.44
+      ],
+      "smooth": true
+    }
+  ]
+}

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
 import pytest
+
+from tests.sample_data import build_batch_for_date
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -35,16 +36,7 @@ def sample_ci_result() -> dict:
 
 @pytest.fixture
 def sample_daily_batch(sample_ci_result: dict) -> dict:
-    models = ["Qwen-image", "Qwen-Image-edit", "WAN2.2", "Qwen3-Omni", "Qwen3-TTS"]
-    hardware = ["NVIDIA-A100", "NVIDIA-H100", "NVIDIA-H20", "AMD-MI300X", "Ascend-A2A3"]
-    results = []
-    for model in models:
-        for hw in hardware:
-            item = json.loads(json.dumps(sample_ci_result))
-            item["model"] = model
-            item["hardware"] = hw
-            results.append(item)
-    return {"results": results}
+    return build_batch_for_date("2026-03-14", sample_ci_result)
 
 
 @pytest.fixture
