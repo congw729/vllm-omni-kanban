@@ -16,7 +16,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 332.59,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 121.29,
           "throughput_tokens_per_sec": 1154.43,
           "ttft_ms": 81.15
@@ -44,7 +44,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 625.23,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 204.45,
           "throughput_tokens_per_sec": 1497.97,
           "ttft_ms": 128.14
@@ -72,7 +72,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 516.82,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 191.18,
           "throughput_tokens_per_sec": 1093.49,
           "ttft_ms": 146.17
@@ -100,7 +100,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 401.84,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 167.7,
           "throughput_tokens_per_sec": 948.8,
           "ttft_ms": 130.31
@@ -128,7 +128,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 493.71,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 158.81,
           "throughput_tokens_per_sec": 1564.62,
           "ttft_ms": 137.09
@@ -156,7 +156,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 545.47,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 187.75,
           "throughput_tokens_per_sec": 1021.49,
           "ttft_ms": 163.63
@@ -184,7 +184,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 346.85,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 98.92,
           "throughput_tokens_per_sec": 980.15,
           "ttft_ms": 116.66
@@ -212,7 +212,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 474.14,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 204.62,
           "throughput_tokens_per_sec": 1074.71,
           "ttft_ms": 163.52
@@ -240,7 +240,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 365.65,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 122.04,
           "throughput_tokens_per_sec": 1032.86,
           "ttft_ms": 146.0
@@ -268,7 +268,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 481.2,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 170.51,
           "throughput_tokens_per_sec": 1463.18,
           "ttft_ms": 136.09
@@ -296,7 +296,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 597.91,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 180.87,
           "throughput_tokens_per_sec": 977.36,
           "ttft_ms": 159.83
@@ -324,7 +324,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 443.39,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 163.2,
           "throughput_tokens_per_sec": 1792.7,
           "ttft_ms": 154.89
@@ -352,7 +352,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 577.33,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 202.54,
           "throughput_tokens_per_sec": 968.59,
           "ttft_ms": 157.04
@@ -380,7 +380,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 498.36,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 215.18,
           "throughput_tokens_per_sec": 1109.06,
           "ttft_ms": 88.12
@@ -408,7 +408,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 284.95,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 104.24,
           "throughput_tokens_per_sec": 1260.1,
           "ttft_ms": 91.29
@@ -436,7 +436,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 422.34,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 133.8,
           "throughput_tokens_per_sec": 1352.16,
           "ttft_ms": 150.95
@@ -464,7 +464,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 216.96,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 84.13,
           "throughput_tokens_per_sec": 1508.08,
           "ttft_ms": 150.36
@@ -492,7 +492,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 222.68,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 74.8,
           "throughput_tokens_per_sec": 1364.29,
           "ttft_ms": 91.2
@@ -520,7 +520,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 598.03,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 221.06,
           "throughput_tokens_per_sec": 1136.3,
           "ttft_ms": 114.95
@@ -548,7 +548,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 580.48,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 174.69,
           "throughput_tokens_per_sec": 1575.18,
           "ttft_ms": 64.27
@@ -576,7 +576,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 289.12,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 107.05,
           "throughput_tokens_per_sec": 1239.67,
           "ttft_ms": 150.85
@@ -604,7 +604,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 247.48,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 80.37,
           "throughput_tokens_per_sec": 921.13,
           "ttft_ms": 81.25
@@ -632,7 +632,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 353.68,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 150.71,
           "throughput_tokens_per_sec": 1531.15,
           "ttft_ms": 77.15
@@ -660,7 +660,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 572.16,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 198.25,
           "throughput_tokens_per_sec": 1516.57,
           "ttft_ms": 143.45
@@ -688,7 +688,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 234.78,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 77.41,
           "throughput_tokens_per_sec": 1001.6,
           "ttft_ms": 60.95
@@ -716,7 +716,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 351.91,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 153.83,
           "throughput_tokens_per_sec": 1720.06,
           "ttft_ms": 149.37
@@ -744,7 +744,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 369.2,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 136.03,
           "throughput_tokens_per_sec": 1501.26,
           "ttft_ms": 154.75
@@ -772,7 +772,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 253.45,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 79.29,
           "throughput_tokens_per_sec": 1655.69,
           "ttft_ms": 56.09
@@ -800,7 +800,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 203.61,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 76.84,
           "throughput_tokens_per_sec": 1776.34,
           "ttft_ms": 153.0
@@ -828,7 +828,7 @@
           }
         },
         "performance": {
-          "latency_p99_ms": 233.35,
+          "latency_p99_ms": 100,
           "latency_p50_ms": 77.55,
           "throughput_tokens_per_sec": 1166.57,
           "ttft_ms": 100.11

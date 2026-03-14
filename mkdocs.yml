@@ -3,6 +3,19 @@ site_description: Daily multimodal CI health dashboard for vLLM-omni
 theme:
   name: material
   custom_dir: docs/overrides
+  palette:
+    - scheme: default
+      primary: blue grey
+      accent: blue
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: black
+      accent: lime
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
 plugins:
   - search
 nav:

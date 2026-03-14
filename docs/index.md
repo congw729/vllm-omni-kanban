@@ -1,10 +1,34 @@
 # vLLM-Omni Kanban
 
 <p class="dashboard-intro">
-This dashboard tracks one daily snapshot per model and hardware combination for vLLM-omni multimodal CI. The homepage now starts with model-specific 7-day performance views so you can inspect latency, throughput, TTFT, and benchmark movement before scanning stability rollups.
+This dashboard tracks one daily snapshot per model and hardware combination for vLLM-omni multimodal CI. Start with the model sections to inspect latency, throughput, TTFT, and benchmark movement across the currently selected time window, then use the stability rollups below for a quick fleet sanity check.
 </p>
 
-## 7-Day Model Performance
+<section class="dashboard-toolbar">
+<div class="health-banner" data-summary-src="assets/charts/summary.json">
+  <div class="health-banner__state">
+    <span class="health-banner__dot" data-health-dot></span>
+    <div>
+      <p class="health-banner__eyebrow">Global Health</p>
+      <strong class="health-banner__headline" data-health-title>Loading status...</strong>
+      <p class="health-banner__meta" data-health-meta>Checking the latest snapshot and active alerts.</p>
+    </div>
+  </div>
+  <a class="health-banner__link" href="alerts/">View Alerts</a>
+</div>
+
+<label class="time-range-control" for="time-range">
+  <span class="time-range-control__label">Time Window</span>
+  <select id="time-range" data-time-range>
+    <option value="1d">24h</option>
+    <option value="7d" selected>7 days</option>
+    <option value="30d">30 days</option>
+  </select>
+  <span class="time-range-control__hint">Applies to all trend charts on this page.</span>
+</label>
+</section>
+
+## Model Performance
 
 <div class="summary-badges">
   <span>90-day retention</span>
@@ -15,37 +39,37 @@ This dashboard tracks one daily snapshot per model and hardware combination for 
 
 <section class="model-section">
 <h3>Qwen Image</h3>
-<p class="section-note">Image-generation performance across the hardware fleet for the last 7 days.</p>
+<p class="section-note">Image-generation performance across the hardware fleet for the selected time window.</p>
 <div class="chart-grid">
 <div class="chart-card">
 <h4>Latency P99</h4>
-<div class="chart-frame" id="chart-qwen-image-latency" data-chart-src="assets/charts/qwen_image_latency_p99_ms_7d.json"></div>
+<div class="chart-frame" id="chart-qwen-image-latency" data-chart-base="qwen_image_latency_p99_ms"></div>
 </div>
 <div class="chart-card">
 <h4>Throughput</h4>
-<div class="chart-frame" id="chart-qwen-image-throughput" data-chart-src="assets/charts/qwen_image_throughput_tokens_per_sec_7d.json"></div>
+<div class="chart-frame" id="chart-qwen-image-throughput" data-chart-base="qwen_image_throughput_tokens_per_sec"></div>
 </div>
 </div>
 </section>
 
 <section class="model-section">
 <h3>Qwen Image Edit</h3>
-<p class="section-note">Editing latency trends for the current daily-snapshot window.</p>
+<p class="section-note">Editing latency trends for the current selected window.</p>
 <div class="chart-grid">
 <div class="chart-card">
 <h4>Latency P99</h4>
-<div class="chart-frame" id="chart-qwen-image-edit-latency" data-chart-src="assets/charts/qwen_image_edit_latency_p99_ms_7d.json"></div>
+<div class="chart-frame" id="chart-qwen-image-edit-latency" data-chart-base="qwen_image_edit_latency_p99_ms"></div>
 </div>
 </div>
 </section>
 
 <section class="model-section">
 <h3>WAN 2.2</h3>
-<p class="section-note">Video-generation latency over the past 7 daily runs.</p>
+<p class="section-note">Video-generation latency across the selected daily-snapshot range.</p>
 <div class="chart-grid">
 <div class="chart-card">
 <h4>Latency P99</h4>
-<div class="chart-frame" id="chart-wan-latency" data-chart-src="assets/charts/wan22_latency_p99_ms_7d.json"></div>
+<div class="chart-frame" id="chart-wan-latency" data-chart-base="wan22_latency_p99_ms"></div>
 </div>
 </div>
 </section>
@@ -56,30 +80,30 @@ This dashboard tracks one daily snapshot per model and hardware combination for 
 <div class="chart-grid">
 <div class="chart-card">
 <h4>Latency P99</h4>
-<div class="chart-frame" id="chart-qwen3-omni-latency" data-chart-src="assets/charts/qwen3_omni_latency_p99_ms_7d.json"></div>
+<div class="chart-frame" id="chart-qwen3-omni-latency" data-chart-base="qwen3_omni_latency_p99_ms"></div>
 </div>
 <div class="chart-card">
 <h4>Throughput</h4>
-<div class="chart-frame" id="chart-qwen3-omni-throughput" data-chart-src="assets/charts/qwen3_omni_throughput_tokens_per_sec_7d.json"></div>
+<div class="chart-frame" id="chart-qwen3-omni-throughput" data-chart-base="qwen3_omni_throughput_tokens_per_sec"></div>
 </div>
 <div class="chart-card">
 <h4>TTFT</h4>
-<div class="chart-frame" id="chart-qwen3-omni-ttft" data-chart-src="assets/charts/qwen3_omni_ttft_ms_7d.json"></div>
+<div class="chart-frame" id="chart-qwen3-omni-ttft" data-chart-base="qwen3_omni_ttft_ms"></div>
 </div>
 <div class="chart-card">
 <h4>Benchmark Score</h4>
-<div class="chart-frame" id="chart-qwen3-omni-benchmark" data-chart-src="assets/charts/qwen3_omni_benchmark_score_7d.json"></div>
+<div class="chart-frame" id="chart-qwen3-omni-benchmark" data-chart-base="qwen3_omni_benchmark_score"></div>
 </div>
 </div>
 </section>
 
 <section class="model-section">
 <h3>Qwen3 TTS</h3>
-<p class="section-note">Audio-synthesis latency trends for the last 7 daily snapshots.</p>
+<p class="section-note">Audio-synthesis latency trends across the selected daily snapshots.</p>
 <div class="chart-grid">
 <div class="chart-card">
 <h4>Latency P99</h4>
-<div class="chart-frame" id="chart-qwen3-tts-latency" data-chart-src="assets/charts/qwen3_tts_latency_p99_ms_7d.json"></div>
+<div class="chart-frame" id="chart-qwen3-tts-latency" data-chart-base="qwen3_tts_latency_p99_ms"></div>
 </div>
 </div>
 </section>
@@ -90,12 +114,8 @@ This dashboard tracks one daily snapshot per model and hardware combination for 
 
 <div class="follow-up-grid">
 <div class="chart-card">
-<h4>Pass Rate (7d)</h4>
-<div class="chart-frame" id="chart-pass-rate-7d" data-chart-src="assets/charts/pass_rate_trend_7d.json"></div>
-</div>
-<div class="chart-card">
-<h4>Pass Rate (30d)</h4>
-<div class="chart-frame" id="chart-pass-rate-30d" data-chart-src="assets/charts/pass_rate_trend_30d.json"></div>
+<h4>Pass Rate Trend</h4>
+<div class="chart-frame" id="chart-pass-rate" data-chart-base="pass_rate_trend"></div>
 </div>
 </div>
 

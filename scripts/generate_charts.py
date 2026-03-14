@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +22,7 @@ MODEL_METRICS = [
     ("ttft_ms", "TTFT (ms)", None, None),
     ("benchmark_score", "Benchmark Score", 0, 1),
 ]
+RANGE_WINDOWS = {"1d": 1, "7d": 7, "30d": 30}
 
 def save_chart(name: str, option: dict[str, Any]) -> None:
     save_json(CHARTS_DIR / f"{name}.json", option)
@@ -33,7 +35,12 @@ def average_metric(results: list[dict[str, Any]], metric: str) -> float | None:
     return round(sum(values) / len(values), 4)
 
 
-def build_line_chart(dates: list[str], values: list[float | None], title: str, y_min: float | None = None, y_max: float | None = None) -> dict[str, Any]:
+def build_line_chart(
+    dates: list[str],
+    values: list[float | None],
+    y_min: float | None = None,
+    y_max: float | None = None,
+) -> dict[str, Any]:
     return {
         "tooltip": {"trigger": "axis"},
         "grid": {"left": 56, "right": 24, "top": 36, "bottom": 42},
@@ -109,14 +116,26 @@ def build_heatmap(config: dict[str, Any], latest_results: list[dict[str, Any]]) 
 
 
 def build_summary(index: dict[str, Any], latest_results: list[dict[str, Any]], alerts: dict[str, Any]) -> dict[str, Any]:
+    active_alerts = [item for item in alerts.get("alerts", []) if not item.get("resolved")]
+    level_counts = Counter(item.get("level", "warning") for item in active_alerts)
     if not latest_results:
-        return {"latest_date": None, "overall_pass_rate": None, "overall_latency_p99_ms": None, "latest_commit": None, "recent_alerts": 0}
+        return {
+            "latest_date": None,
+            "overall_pass_rate": None,
+            "overall_latency_p99_ms": None,
+            "latest_commit": None,
+            "recent_alerts": 0,
+            "warning_alerts": 0,
+            "critical_alerts": 0,
+        }
     return {
         "latest_date": sorted(index.get("dates", []))[-1],
         "overall_pass_rate": average_metric(latest_results, "pass_rate"),
         "overall_latency_p99_ms": average_metric(latest_results, "latency_p99_ms"),
         "latest_commit": max(latest_results, key=lambda item: item["timestamp"])["commit"],
-        "recent_alerts": len([item for item in alerts.get("alerts", []) if not item.get("resolved")]),
+        "recent_alerts": len(active_alerts),
+        "warning_alerts": level_counts.get("warning", 0),
+        "critical_alerts": level_counts.get("critical", 0),
     }
 
 
@@ -131,9 +150,15 @@ def main() -> int:
     latency_values = [average_metric(day_results[date], "latency_p99_ms") for date in dates]
     hardware_items = [(key, value["display_name"]) for key, value in config.get("hardware", {}).items()]
 
-    save_chart("pass_rate_trend_7d", build_line_chart(dates[-7:], pass_rate_values[-7:], "Pass Rate (7d)", 0, 1))
-    save_chart("pass_rate_trend_30d", build_line_chart(dates[-30:], pass_rate_values[-30:], "Pass Rate (30d)", 0, 1))
-    save_chart("latency_p99_trend_7d", build_line_chart(dates[-7:], latency_values[-7:], "Latency P99 (7d)"))
+    for range_key, window in RANGE_WINDOWS.items():
+        save_chart(
+            f"pass_rate_trend_{range_key}",
+            build_line_chart(dates[-window:], pass_rate_values[-window:], 0, 1),
+        )
+        save_chart(
+            f"latency_p99_trend_{range_key}",
+            build_line_chart(dates[-window:], latency_values[-window:]),
+        )
     latest_results = day_results[dates[-1]] if dates else []
     save_chart("pass_rate_heatmap", build_heatmap(config, latest_results))
     save_chart("summary", build_summary(index, latest_results, alerts))
@@ -142,18 +167,19 @@ def main() -> int:
         for metric, label, y_min, y_max in MODEL_METRICS:
             if metric not in available_metrics:
                 continue
-            save_chart(
-                f"{chart_slug(model)}_{metric}_7d",
-                build_multi_series_chart(
-                    dates[-7:],
-                    hardware_items,
-                    day_results,
-                    model,
-                    metric,
-                    y_min=y_min,
-                    y_max=y_max,
-                ),
-            )
+            for range_key, window in RANGE_WINDOWS.items():
+                save_chart(
+                    f"{chart_slug(model)}_{metric}_{range_key}",
+                    build_multi_series_chart(
+                        dates[-window:],
+                        hardware_items,
+                        day_results,
+                        model,
+                        metric,
+                        y_min=y_min,
+                        y_max=y_max,
+                    ),
+                )
     print(f"generated {len(list(CHARTS_DIR.glob('*.json')))} chart files")
     return 0
 

@@ -702,30 +702,29 @@
       }
     },
     {
-      "timestamp": "2026-03-14T06:00:00+08:00",
-      "commit": "4514aac66d99",
+      "timestamp": "2026-03-14T07:00:00+08:00",
+      "commit": "updatedcommit123",
       "hardware": "NVIDIA-H100",
       "model": "Qwen3-TTS",
       "metrics": {
         "stability": {
-          "pass_rate": 0.9385,
+          "pass_rate": 0.95,
           "crash_count": 0,
           "error_types": {
-            "timeout": 0,
-            "oom": 0
+            "timeout": 0
           }
         },
         "performance": {
-          "latency_p99_ms": 638.34,
-          "latency_p50_ms": 186.5,
-          "throughput_tokens_per_sec": 1361.99,
-          "ttft_ms": 106.69
+          "latency_p99_ms": 420,
+          "latency_p50_ms": 120,
+          "throughput_tokens_per_sec": 1500,
+          "ttft_ms": 85
         },
         "accuracy": {
-          "benchmark_score": 0.8821
+          "benchmark_score": 0.89
         },
         "custom": {
-          "audio_quality_mos": 4.25
+          "audio_quality_mos": 4.2
         }
       }
     },
