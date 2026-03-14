@@ -7,7 +7,7 @@
 
 ## Overview
 
-vLLM-Omni Kanban is a monitoring dashboard that tracks stability, performance, and accuracy of vLLM multimodal models across different hardware platforms. It updates daily at 6:00 AM Beijing time using data from vLLM-omni CI.
+vLLM-Omni Kanban is a monitoring dashboard that tracks stability, performance, and accuracy of vLLM multimodal models across different hardware platforms. It maintains one daily snapshot per model/hardware combination. The system refreshes the full daily snapshot at 6:00 AM Beijing time by fetching results from an external source and can also accept push-based updates from vLLM-omni CI during the day.
 
 ## Goals
 
@@ -40,25 +40,35 @@ vLLM-Omni Kanban is a monitoring dashboard that tracks stability, performance, a
 
 ## Architecture
 
-### Approach: Simple Push-Based Pipeline
+### Approach: Hybrid Push + Scheduled Fetch Pipeline
 
 ```
-vLLM-omni CI --(push)--> vllm-omni-kanban repo
-                              |
-                              v
-                        [process_results.py]
-                              |
-              +---------------+---------------+
-              |               |               |
-              v               v               v
-        data/          docs/reports/    [check_alerts.py]
-        (JSON)          (markdown)            |
-                              |               v
-                              v         WeChat + Email
-                        MkDocs build
-                              |
-                              v
-                      GitHub Pages
+vLLM-omni CI --(push single result)----------------------+
+                                                         |
+External results source --(6:00 AM fetch daily batch)--> [fetch_latest_results.py]
+                                                         |
+                                                         v
+                                                   [process_results.py]
+                                                         |
+                          +------------------------------+------------------------------+
+                          |                              |                              |
+                          v                              v                              v
+                    data/ (JSON)                  docs/reports/                  [check_alerts.py]
+                                                  (markdown)                           |
+                          |                              |                              v
+                          +---------------+--------------+                       data/alerts.json
+                                          |                                              |
+                                          v                                              v
+                                   [generate_charts.py]                          WeChat + Email
+                                          |
+                                          v
+                                 docs/assets/charts/
+                                          |
+                                          v
+                                     MkDocs build
+                                          |
+                                          v
+                                      GitHub Pages
 ```
 
 ## Repository Structure
@@ -67,8 +77,8 @@ vLLM-omni CI --(push)--> vllm-omni-kanban repo
 vllm-omni-kanban/
 ├── .github/
 │   └── workflows/
-│       ├── build-dashboard.yml    # Build & deploy MkDocs to GitHub Pages
-│       └── process-results.yml    # Triggered when new results arrive
+│       ├── build-dashboard.yml    # Manual rebuild/deploy only
+│       └── process-results.yml    # Handles dispatch and scheduled daily refresh
 ├── data/
 │   ├── results/                   # Per-date CI results (sharded for efficiency)
 │   │   └── 2026-03-13.json        # One file per day
@@ -84,6 +94,7 @@ vllm-omni-kanban/
 │   └── overrides/
 │       └── main.html              # MkDocs theme override (injects ECharts JS)
 ├── scripts/
+│   ├── fetch_latest_results.py    # Fetches full daily snapshot from external source
 │   ├── process_results.py         # Parse CI data, deduplicate, prune, generate reports
 │   ├── generate_charts.py         # Create ECharts JSON data files
 │   └── check_alerts.py            # Compare metrics vs thresholds, send notifications
@@ -147,7 +158,7 @@ vllm-omni-kanban/
 }
 ```
 
-> **Deduplication:** `process_results.py` checks for existing `(date, hardware, model)` tuples before appending. Duplicate pushes (e.g., CI retry) are silently ignored with a log warning.
+> **Daily snapshot rule:** `process_results.py` maintains one snapshot per `(date, hardware, model)` tuple. Exact duplicate pushes (for example, a CI retry with the same payload) are ignored with a log warning. The scheduled 6:00 AM fetch is authoritative for the day and may replace an existing snapshot for the same tuple if it contains newer data.
 
 > **90-day pruning:** On each run, `index.json` is updated and date files older than 90 days are deleted. Daily reports in `docs/reports/` are **not** pruned — they serve as a permanent archive.
 
@@ -229,6 +240,16 @@ The config defines which metrics are required/optional for each model:
       -d "{\"event_type\": \"ci_results\", \"client_payload\": ${PAYLOAD}}"
 ```
 
+### Scheduled Fetch (from external source)
+
+The scheduled workflow does not depend on `repository_dispatch`. At 6:00 AM Beijing time it fetches a full daily batch from an external JSON source published by the vLLM-omni pipeline, for example an artifact manifest or object-storage URL exposed via `RESULTS_SOURCE_URL`.
+
+```bash
+python scripts/fetch_latest_results.py --output /tmp/daily-results.json
+# Reads from: RESULTS_SOURCE_URL (+ optional auth token)
+# Writes to: batch JSON with 25 daily snapshot results
+```
+
 ### Process & Deploy (this repo)
 
 The workflow is split into three jobs so failures in alerting or deployment don't block each other, and so errors are surfaced clearly.
@@ -250,17 +271,33 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install -r requirements.txt
+      - name: Fetch scheduled batch
+        if: github.event_name == 'schedule'
+        run: python scripts/fetch_latest_results.py --output /tmp/daily-results.json
+        env:
+          RESULTS_SOURCE_URL: ${{ secrets.RESULTS_SOURCE_URL }}
+          RESULTS_SOURCE_TOKEN: ${{ secrets.RESULTS_SOURCE_TOKEN }}
       - name: Validate input schema
-        run: python scripts/process_results.py --validate-only
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            python scripts/process_results.py --validate-only --input /tmp/daily-results.json --source schedule
+          else
+            python scripts/process_results.py --validate-only --source dispatch
+          fi
       - name: Process and store results
-        run: python scripts/process_results.py
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            python scripts/process_results.py --input /tmp/daily-results.json --source schedule
+          else
+            python scripts/process_results.py --source dispatch
+          fi
       - name: Generate chart data
         run: python scripts/generate_charts.py
       - name: Commit data changes
         run: |
           git config user.name "CI Bot"
           git config user.email "ci-bot@github.com"
-          git add data/ docs/reports/
+          git add data/ docs/reports/ docs/assets/charts/
           git diff --staged --quiet || git commit -m "chore: update results $(date -u +%Y-%m-%d)"
           git push
 
@@ -280,16 +317,26 @@ jobs:
         env:
           WECHAT_WEBHOOK: ${{ secrets.WECHAT_WEBHOOK }}
           EMAIL_SMTP_HOST: ${{ secrets.EMAIL_SMTP_HOST }}
+          EMAIL_SMTP_PORT: ${{ secrets.EMAIL_SMTP_PORT }}
           EMAIL_SMTP_USER: ${{ secrets.EMAIL_SMTP_USER }}
           EMAIL_SMTP_PASS: ${{ secrets.EMAIL_SMTP_PASS }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+      - name: Commit alert history
+        run: |
+          git config user.name "CI Bot"
+          git config user.email "ci-bot@github.com"
+          git add data/alerts.json
+          git diff --staged --quiet || git commit -m "chore: update alerts $(date -u +%Y-%m-%d)"
+          git push
 
   deploy:
-    needs: process
+    needs: alert
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main  # pull latest after process job committed
+          ref: main  # pull latest after process + alert jobs committed
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -391,7 +438,7 @@ To prevent alert fatigue, `check_alerts.py` tracks active alerts in `alerts.json
 ### Notification Channels
 
 - **WeChat (企业微信)** — Webhook-based
-- **Email** — SMTP-based (host/user/pass configured via separate secrets)
+- **Email** — SMTP-based (`EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT`, `EMAIL_SMTP_USER`, `EMAIL_SMTP_PASS`, `EMAIL_FROM`, `EMAIL_TO`)
 
 ### Notification Format
 
@@ -417,31 +464,32 @@ Link: https://your-org.github.io/vllm-omni-kanban/
 - Define and validate JSON schemas (CI result, index, config, alerts)
 - Implement `process_results.py` (validate → deduplicate → append → prune)
 - Write Phase 1 tests; achieve ≥80% coverage on `process_results.py`
-- Set up GitHub Pages deployment via `build-dashboard.yml`
+- Implement `fetch_latest_results.py` contract and external source configuration
 
-### Phase 2: Dashboard & Visualization (Week 2)
-- Build homepage (`docs/index.md`) with summary cards, hardware grid, model matrix
-- Implement daily report generator (auto-creates `docs/reports/YYYY-MM-DD.md`)
-- Implement `generate_charts.py` (ECharts JSON output for line, heatmap, bar)
-- Wire ECharts via MkDocs macros + `docs/overrides/main.html`
-- Write Phase 2 tests; achieve ≥80% coverage on `generate_charts.py`
-
-### Phase 3: CI Integration (Week 3)
-- Create split `process-results.yml` workflow (process / alert / deploy jobs)
-- Add `repository_dispatch` handler with schema validation step
-- Configure scheduled fallback job (6:00 AM Beijing = UTC 22:00)
-- Test end-to-end with sample data using `act` or manual dispatch
-
-### Phase 4: Alerting (Week 4)
+### Phase 2: Alerting (Week 2)
 - Implement `check_alerts.py`: absolute thresholds, regression detection (7-day baseline)
 - Add 24-hour alert cooldown / suppression logic
 - Handle sparse baseline (< 7 days): skip regression check, log warning
 - Integrate WeChat Enterprise webhook notifications
 - Integrate Email SMTP notifications
-- Write Phase 4 tests; achieve ≥95% coverage on `check_alerts.py`
+- Write Phase 2 tests; achieve ≥95% coverage on `check_alerts.py`
+
+### Phase 3: Dashboard & Visualization (Week 3)
+- Build homepage (`docs/index.md`) with summary cards, hardware grid, model matrix
+- Implement daily report generator (auto-creates `docs/reports/YYYY-MM-DD.md`)
+- Implement `generate_charts.py` (ECharts JSON output for line, heatmap, bar)
+- Wire ECharts via MkDocs macros + `docs/overrides/main.html`
+- Write Phase 3 tests; achieve ≥80% coverage on `generate_charts.py`
+
+### Phase 4: CI Integration (Week 4)
+- Create split `process-results.yml` workflow (process / alert / deploy jobs)
+- Add `repository_dispatch` handler with schema validation step
+- Configure scheduled fetch job (6:00 AM Beijing = UTC 22:00)
+- Ensure generated charts and `alerts.json` are committed before deployment
+- Test end-to-end with sample data using `act` or manual dispatch
 
 ### Phase 5: Polish & Docs (Week 5)
 - Add MkDocs navigation, search, report archive index
 - Write contributor guide: how to add a new model, new metric, new hardware
-- Document secrets setup in GitHub repository settings
+- Document secrets setup in GitHub repository settings, including external fetch and email delivery config
 - Final end-to-end smoke test with all 5 models × 5 hardware

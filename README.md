@@ -14,11 +14,21 @@ Monitoring dashboard for vLLM multimodal model stability, performance, and accur
 ```bash
 pip install -r requirements.txt
 pytest
+mkdocs build --strict
 ```
 
-**Process results:** `scripts/process_results.py` — append, prune, generate daily report  
-**Alerts:** `scripts/check_alerts.py` — thresholds and 7-day regression  
-**Charts:** `scripts/generate_charts.py` — line charts, heatmaps
+To preview locally:
+
+```bash
+mkdocs serve
+```
+
+Core scripts:
+
+- `scripts/process_results.py`: validate inputs, maintain one daily snapshot per `(date, hardware, model)`, prune old data, generate reports
+- `scripts/check_alerts.py`: evaluate absolute thresholds and 7-day regressions, persist alert history, send notifications
+- `scripts/generate_charts.py`: build JSON chart payloads for the dashboard
+- `scripts/fetch_latest_results.py`: fetch the scheduled daily batch from an external source
 
 ## Docs
 

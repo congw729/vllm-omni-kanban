@@ -29,12 +29,14 @@ TDD discipline is enforced throughout: **write tests first, then implement**. Ea
 | `docs/index.md` | Dashboard homepage skeleton |
 | `docs/overrides/main.html` | ECharts JS injection override |
 | `docs/assets/js/render_charts.js` | ECharts mount script |
+| `scripts/fetch_latest_results.py` | Scheduled fetch from external daily results source |
 
 **Tasks:**
 - [ ] Create directory structure matching repo layout in design doc
 - [ ] Write `data/config.json` with all 5 models (including `Qwen-Image-edit`, `WAN2.2`, `Qwen3-Omni`, `Qwen3-TTS`, `Qwen-image`), all 5 hardware platforms, global thresholds, and per-model `alert_overrides`
 - [ ] Write `requirements.txt`
 - [ ] Write `pytest.ini`
+- [ ] Define secrets/config contract for `RESULTS_SOURCE_URL` and `RESULTS_SOURCE_TOKEN`
 - [ ] Verify `mkdocs serve` starts without errors
 
 ### 1.2 `process_results.py`
@@ -47,15 +49,15 @@ TDD discipline is enforced throughout: **write tests first, then implement**. Ea
 4. `test_creates_date_file_if_missing` → implement `write_result(result, data_dir)`
 5. `test_append_result` → implement append-to-existing-date-file logic
 6. `test_updates_index_json` → implement `update_index(data_dir)`
-7. `test_deduplicate_same_tuple` → implement dedup check
+7. `test_deduplicate_same_payload` / `test_upsert_same_day_tuple_from_scheduled_fetch` → enforce one snapshot per `(date, hardware, model)`
 8. `test_prune_old_data` + `test_prune_boundary` → implement 90-day prune
 9. `test_generate_daily_report` + `test_daily_report_content` → implement `generate_report(date, results, config)`
 10. `test_validate_only_flag` → implement `--validate-only` CLI flag
 
 **Script interface:**
 ```bash
-python scripts/process_results.py [--validate-only] [--input FILE]
-# Reads from: github.event.client_payload (injected as env) or --input file
+python scripts/process_results.py [--validate-only] [--input FILE] [--source dispatch|schedule]
+# Reads from: github.event.client_payload (injected as env) or --input file containing one result or a daily batch
 # Writes to: data/results/YYYY-MM-DD.json, data/index.json, docs/reports/YYYY-MM-DD.md
 ```
 
@@ -63,80 +65,9 @@ python scripts/process_results.py [--validate-only] [--input FILE]
 
 ---
 
-## Phase 2: Dashboard & Visualization (Week 2)
+## Phase 2: Alerting (Week 2)
 
-### 2.1 `generate_charts.py`
-
-**TDD order:**
-
-1. `test_line_chart_data_structure` → implement `build_line_chart(metric, dates, data)`
-2. `test_line_chart_7d_window` / `test_line_chart_30d_window` → implement date range filter
-3. `test_heatmap_matrix_shape` / `test_heatmap_matrix_values` → implement `build_heatmap(data, config)`
-4. `test_heatmap_missing_cell` → handle missing combinations with null
-5. `test_bar_chart_per_model` → implement `build_bar_chart(model, metric, data)`
-6. `test_empty_data_handling` → handle empty input gracefully
-7. `test_output_files_created` → implement file writing to `docs/assets/charts/`
-
-**Script interface:**
-```bash
-python scripts/generate_charts.py
-# Reads from: data/results/ + data/index.json
-# Writes to: docs/assets/charts/*.json
-```
-
-**Coverage gate:** ≥80% before moving to Phase 3.
-
-### 2.2 Dashboard Homepage
-
-**Files to implement:**
-
-| File | Content |
-|------|---------|
-| `docs/index.md` | Summary cards, hardware grid, model matrix, trend chart macros, recent alerts |
-| `docs/overrides/main.html` | Extends Material base, injects ECharts + render_charts.js |
-| `docs/assets/js/render_charts.js` | Reads `*.json` from assets/charts/, mounts each ECharts instance |
-
-**Tasks:**
-- [ ] Implement summary card section (overall pass rate, avg latency, latest commit)
-- [ ] Implement hardware status grid (5 cards with pass/fail color coding)
-- [ ] Implement model × hardware matrix table
-- [ ] Wire `{{ render_chart("...") }}` macros to ECharts JSON files
-- [ ] Verify charts render correctly in `mkdocs serve`
-
----
-
-## Phase 3: CI Integration (Week 3)
-
-### 3.1 GitHub Actions Workflows
-
-**Files to create:**
-
-| File | Purpose |
-|------|---------|
-| `.github/workflows/process-results.yml` | Three-job workflow: process / alert / deploy |
-| `.github/workflows/build-dashboard.yml` | Manual/scheduled MkDocs rebuild |
-
-**Tasks:**
-- [ ] Implement `process-results.yml` with three jobs as specified in the design doc
-- [ ] Add `--validate-only` step before write in the `process` job
-- [ ] Confirm `repository_dispatch` trigger works with `event_type: ci_results`
-- [ ] Confirm `schedule: cron: '0 22 * * *'` fires at 6:00 AM Beijing time
-- [ ] Add `git config user.email` to commit step (required by git)
-- [ ] Document required GitHub Secrets: `KANBAN_TOKEN`, `WECHAT_WEBHOOK`, `EMAIL_SMTP_HOST`, `EMAIL_SMTP_USER`, `EMAIL_SMTP_PASS`
-
-### 3.2 End-to-End Smoke Test
-
-- [ ] Create `tests/fixtures/sample_dispatch_payload.json` with a realistic CI result
-- [ ] Run `python scripts/process_results.py --input tests/fixtures/sample_dispatch_payload.json` locally
-- [ ] Verify `data/results/YYYY-MM-DD.json` created, `data/index.json` updated, `docs/reports/YYYY-MM-DD.md` generated
-- [ ] Run `python scripts/generate_charts.py` and verify `docs/assets/charts/*.json` created
-- [ ] Run `mkdocs serve` and manually verify homepage renders with data
-
----
-
-## Phase 4: Alerting (Week 4)
-
-### 4.1 `check_alerts.py`
+### 2.1 `check_alerts.py`
 
 **TDD order (strict — 95% coverage required):**
 
@@ -162,7 +93,102 @@ python scripts/check_alerts.py
 # Sends: WeChat webhook, Email SMTP (via env vars)
 ```
 
-**Coverage gate:** ≥95% before Phase 5.
+**Coverage gate:** ≥95% before moving to Phase 3.
+
+---
+
+## Phase 3: Dashboard & Visualization (Week 3)
+
+### 3.1 `generate_charts.py`
+
+**TDD order:**
+
+1. `test_line_chart_data_structure` → implement `build_line_chart(metric, dates, data)`
+2. `test_line_chart_7d_window` / `test_line_chart_30d_window` → implement date range filter
+3. `test_heatmap_matrix_shape` / `test_heatmap_matrix_values` → implement `build_heatmap(data, config)`
+4. `test_heatmap_missing_cell` → handle missing combinations with null
+5. `test_bar_chart_per_model` → implement `build_bar_chart(model, metric, data)`
+6. `test_empty_data_handling` → handle empty input gracefully
+7. `test_output_files_created` → implement file writing to `docs/assets/charts/`
+
+**Script interface:**
+```bash
+python scripts/generate_charts.py
+# Reads from: data/results/ + data/index.json
+# Writes to: docs/assets/charts/*.json
+```
+
+**Coverage gate:** ≥80% before moving to Phase 4.
+
+### 3.2 Dashboard Homepage
+
+**Files to implement:**
+
+| File | Content |
+|------|---------|
+| `docs/index.md` | Summary cards, hardware grid, model matrix, trend chart macros, recent alerts |
+| `docs/overrides/main.html` | Extends Material base, injects ECharts + render_charts.js |
+| `docs/assets/js/render_charts.js` | Reads `*.json` from assets/charts/, mounts each ECharts instance |
+
+**Tasks:**
+- [ ] Implement summary card section (overall pass rate, avg latency, latest commit)
+- [ ] Implement hardware status grid (5 cards with pass/fail color coding)
+- [ ] Implement model × hardware matrix table
+- [ ] Wire `{{ render_chart("...") }}` macros to ECharts JSON files
+- [ ] Verify charts render correctly in `mkdocs serve`
+
+---
+
+## Phase 4: CI Integration (Week 4)
+
+### 4.1 GitHub Actions Workflows
+
+**Files to create:**
+
+| File | Purpose |
+|------|---------|
+| `.github/workflows/process-results.yml` | Three-job workflow: process / alert / deploy with scheduled fetch support |
+| `.github/workflows/build-dashboard.yml` | Manual MkDocs rebuild/deploy |
+
+**Tasks:**
+- [ ] Implement `process-results.yml` with three jobs as specified in the design doc
+- [ ] Add scheduled fetch step that runs `scripts/fetch_latest_results.py` at 6:00 AM Beijing time
+- [ ] Add `--validate-only` step before write in the `process` job
+- [ ] Confirm `repository_dispatch` trigger works with `event_type: ci_results`
+- [ ] Confirm `schedule: cron: '0 22 * * *'` fires at 6:00 AM Beijing time and fetches the full daily batch
+- [ ] Add `git config user.email` to commit steps (required by git)
+- [ ] Commit generated chart JSON in the `process` job before downstream deploy
+- [ ] Commit `data/alerts.json` in the `alert` job so the dashboard shows current alert history
+- [ ] Make `deploy` depend on `alert`, not just `process`
+- [ ] Document required GitHub Secrets: `KANBAN_TOKEN`, `RESULTS_SOURCE_URL`, `RESULTS_SOURCE_TOKEN`, `WECHAT_WEBHOOK`, `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT`, `EMAIL_SMTP_USER`, `EMAIL_SMTP_PASS`, `EMAIL_FROM`, `EMAIL_TO`
+
+### 4.2 Scheduled Fetch Script
+
+**TDD order:**
+
+1. `test_fetch_latest_results_success` → implement successful download of daily batch JSON
+2. `test_fetch_latest_results_auth_header` → include optional bearer token
+3. `test_fetch_latest_results_retries_transient_error` → retry on transient HTTP failure
+4. `test_fetch_latest_results_invalid_payload` → reject malformed batch structure
+5. `test_fetch_latest_results_writes_output_file` → persist batch JSON to requested output path
+
+**Script interface:**
+```bash
+python scripts/fetch_latest_results.py --output /tmp/daily-results.json
+# Reads from: RESULTS_SOURCE_URL, optional RESULTS_SOURCE_TOKEN
+# Writes to: batch JSON for the current daily snapshot
+```
+
+### 4.3 End-to-End Smoke Test
+
+- [ ] Create `tests/fixtures/sample_dispatch_payload.json` with a realistic CI result
+- [ ] Create `tests/fixtures/sample_daily_batch.json` with all 5 models × 5 hardware combinations
+- [ ] Run `python scripts/process_results.py --input tests/fixtures/sample_dispatch_payload.json --source dispatch` locally
+- [ ] Run `python scripts/process_results.py --input tests/fixtures/sample_daily_batch.json --source schedule` locally
+- [ ] Verify `data/results/YYYY-MM-DD.json` created, `data/index.json` updated, `docs/reports/YYYY-MM-DD.md` generated
+- [ ] Run `python scripts/generate_charts.py` and verify `docs/assets/charts/*.json` created
+- [ ] Run `python scripts/check_alerts.py` and verify `data/alerts.json` updated
+- [ ] Run `mkdocs serve` and manually verify homepage renders with data
 
 ---
 
@@ -183,6 +209,7 @@ python scripts/check_alerts.py
 
 - [ ] Add `docs/contributing.md` — how to add a new model, metric, hardware platform
 - [ ] Add `docs/alerts.md` — alert history page rendering from `alerts.json`
+- [ ] Add ops documentation for the external results source contract and rotation procedure for related secrets
 - [ ] Update `README.md` — add link to live dashboard URL once deployed
 
 ### 5.4 Final Checks
@@ -201,17 +228,20 @@ python scripts/check_alerts.py
 config.json (data schema)
       │
       ▼
+fetch_latest_results.py
+      │
+      ▼
 process_results.py  ──────────────────────────────┐
       │                                            │
       ▼                                            ▼
 data/results/*.json                       docs/reports/*.md
       │
-      ├──────────────────────────────────────────────┐
-      ▼                                              ▼
-generate_charts.py                         check_alerts.py
-      │                                              │
-      ▼                                              ▼
-docs/assets/charts/*.json               data/alerts.json + notifications
+      ├─────────────────────────────┐
+      ▼                             ▼
+check_alerts.py               generate_charts.py
+      │                             │
+      ▼                             ▼
+data/alerts.json + notifications    docs/assets/charts/*.json
       │
       ▼
 mkdocs build → GitHub Pages
@@ -224,6 +254,7 @@ mkdocs build → GitHub Pages
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
 | `repository_dispatch` payload > 10KB | Medium | High | One dispatch per result; validate payload size in CI |
+| External results source unavailable at 6:00 AM | Medium | High | Retry fetch, alert on failure, keep previous day visible until refreshed |
 | ECharts rendering fails on GitHub Pages | Low | Medium | Test with `mkdocs serve` before deploying; use CDN fallback |
 | Concurrent CI pushes corrupt date file | Low | High | Atomic write (write to temp file, rename); CI serialization |
 | WeChat webhook deprecated/changed | Low | Medium | Abstract notification behind interface; easy to swap |

@@ -1,0 +1,72 @@
+{
+  "retention_days": 90,
+  "hardware": {
+    "NVIDIA-A100": {"display_name": "NVIDIA A100"},
+    "NVIDIA-H100": {"display_name": "NVIDIA H100"},
+    "NVIDIA-H20": {"display_name": "NVIDIA H20"},
+    "AMD-MI300X": {"display_name": "AMD MI300X"},
+    "Ascend-A2A3": {"display_name": "Ascend NPU A2/A3"}
+  },
+  "models": {
+    "Qwen-image": {
+      "display_name": "Qwen Image",
+      "category": "image_generation",
+      "metrics": {
+        "required": ["pass_rate", "latency_p99_ms", "throughput_tokens_per_sec"],
+        "optional": ["image_quality_score", "generation_time_ms"]
+      },
+      "alert_overrides": {}
+    },
+    "Qwen-Image-edit": {
+      "display_name": "Qwen Image Edit",
+      "category": "image_editing",
+      "metrics": {
+        "required": ["pass_rate", "latency_p99_ms"],
+        "optional": ["edit_quality_score", "generation_time_ms"]
+      },
+      "alert_overrides": {}
+    },
+    "WAN2.2": {
+      "display_name": "WAN 2.2",
+      "category": "video_generation",
+      "metrics": {
+        "required": ["pass_rate", "latency_p99_ms"],
+        "optional": ["video_quality_score", "generation_time_ms"]
+      },
+      "alert_overrides": {}
+    },
+    "Qwen3-Omni": {
+      "display_name": "Qwen3 Omni",
+      "category": "multimodal",
+      "metrics": {
+        "required": ["pass_rate", "latency_p99_ms", "ttft_ms", "throughput_tokens_per_sec"],
+        "optional": ["benchmark_score"]
+      },
+      "alert_overrides": {}
+    },
+    "Qwen3-TTS": {
+      "display_name": "Qwen3 TTS",
+      "category": "audio_synthesis",
+      "metrics": {
+        "required": ["pass_rate", "latency_p99_ms"],
+        "optional": ["real_time_factor", "audio_quality_mos", "speaker_similarity"]
+      },
+      "alert_overrides": {
+        "latency_p99_ms_critical": 2000
+      }
+    }
+  },
+  "thresholds": {
+    "pass_rate_warning": 0.9,
+    "pass_rate_critical": 0.8,
+    "latency_p99_ms_critical": 1000,
+    "crash_count_critical": 3,
+    "regressions": {
+      "pass_rate_drop": 0.05,
+      "latency_p99_increase": 0.2,
+      "ttft_increase": 0.2,
+      "throughput_drop": 0.15,
+      "benchmark_score_drop": 0.05
+    }
+  }
+}
