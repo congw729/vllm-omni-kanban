@@ -139,6 +139,32 @@ def build_summary(index: dict[str, Any], latest_results: list[dict[str, Any]], a
     }
 
 
+def build_hardware_status(config: dict[str, Any], latest_results: list[dict[str, Any]]) -> dict[str, Any]:
+    hardware_status = []
+    for hardware_key, hardware_config in config.get("hardware", {}).items():
+        hw_results = [r for r in latest_results if r.get("hardware") == hardware_key]
+        if not hw_results:
+            continue
+        pass_rate = average_metric(hw_results, "pass_rate")
+        latency_p99 = average_metric(hw_results, "latency_p99_ms")
+        if pass_rate is None:
+            status = "unknown"
+        elif pass_rate >= 0.9:
+            status = "healthy"
+        elif pass_rate >= 0.8:
+            status = "warning"
+        else:
+            status = "critical"
+        hardware_status.append({
+            "hardware_key": hardware_key,
+            "display_name": hardware_config["display_name"],
+            "pass_rate": pass_rate,
+            "latency_p99_ms": latency_p99,
+            "status": status,
+        })
+    return {"hardware": hardware_status}
+
+
 def main() -> int:
     config = load_json(CONFIG_PATH, {})
     index = load_json(INDEX_PATH, {"dates": []})
@@ -162,6 +188,7 @@ def main() -> int:
     latest_results = day_results[dates[-1]] if dates else []
     save_chart("pass_rate_heatmap", build_heatmap(config, latest_results))
     save_chart("summary", build_summary(index, latest_results, alerts))
+    save_chart("hardware_status", build_hardware_status(config, latest_results))
     for model, model_config in config.get("models", {}).items():
         available_metrics = set(model_config["metrics"]["required"]) | set(model_config["metrics"]["optional"])
         for metric, label, y_min, y_max in MODEL_METRICS:

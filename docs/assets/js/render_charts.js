@@ -112,6 +112,15 @@ async function reloadCharts() {
   await Promise.all(containers.map((container) => loadChart(container)));
 }
 
+function escapeHtml(text) {
+  if (typeof text !== "string") {
+    return "";
+  }
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 function formatPercent(value) {
   return typeof value === "number" ? `${(value * 100).toFixed(1)}%` : "--";
 }
@@ -166,6 +175,57 @@ async function loadHealth() {
   }
 }
 
+function renderHardwareStatus(data) {
+  const container = document.querySelector("[data-hardware-status-src]");
+  if (!container) {
+    return;
+  }
+
+  const hardwareList = data.hardware || [];
+  if (hardwareList.length === 0) {
+    container.innerHTML = '<p class="hardware-status-empty">No hardware status available</p>';
+    return;
+  }
+
+  const statusIcons = {
+    healthy: "✅",
+    warning: "⚠️",
+    critical: "❌",
+    unknown: "❓",
+  };
+
+  const html = hardwareList
+    .map((hw) => {
+      const icon = statusIcons[hw.status] || statusIcons.unknown;
+      const passRateText = typeof hw.pass_rate === "number" ? formatPercent(hw.pass_rate) : "--";
+      const latencyText = typeof hw.latency_p99_ms === "number" ? formatLatency(hw.latency_p99_ms) : "--";
+      return `
+        <div class="hardware-status-card hardware-status-card--${escapeHtml(hw.status)}">
+          <span class="hardware-status-icon">${icon}</span>
+          <span class="hardware-status-name">${escapeHtml(hw.display_name)}</span>
+          <span class="hardware-status-pass">${passRateText}</span>
+          <span class="hardware-status-latency">${latencyText}</span>
+        </div>
+      `;
+    })
+    .join("");
+
+  container.innerHTML = `<div class="hardware-status-grid">${html}</div>`;
+}
+
+async function loadHardwareStatus() {
+  const container = document.querySelector("[data-hardware-status-src]");
+  if (!container) {
+    return;
+  }
+
+  try {
+    renderHardwareStatus(await fetchJson(container.dataset.hardwareStatusSrc));
+  } catch (error) {
+    container.innerHTML = `<p class="hardware-status-error">Failed to load hardware status: ${error.message}</p>`;
+  }
+}
+
 function bindRangePicker() {
   const picker = document.querySelector("[data-time-range]");
   if (!picker) {
@@ -190,5 +250,5 @@ function observeColorScheme() {
 document.addEventListener("DOMContentLoaded", async () => {
   bindRangePicker();
   observeColorScheme();
-  await Promise.all([loadHealth(), reloadCharts()]);
+  await Promise.all([loadHealth(), loadHardwareStatus(), reloadCharts()]);
 });
