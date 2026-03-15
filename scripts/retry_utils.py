@@ -12,7 +12,7 @@ from tenacity import (
     Retrying,
     stop_after_attempt,
     wait_exponential,
-    retry_if_exception_type,
+    retry_if_exception,
 )
 
 logger = logging.getLogger(__name__)
@@ -99,37 +99,21 @@ def with_retry(
             retryer = Retrying(
                 stop=stop_after_attempt(attempts),
                 wait=wait_exponential(multiplier=1, min=min_w, max=max_w),
-                retry=retry_if_exception_type(RETRYABLE_EXCEPTIONS),
+                retry=retry_if_exception(should_retry),
                 reraise=True,
+                before_sleep=lambda retry_state: logger.warning(
+                    f"{fn.__name__} failed (attempt {retry_state.attempt_number}/{attempts}), retrying..."
+                ),
             )
             
-            attempt_count = 0
-            last_exception = None
-            
-            for attempt in retryer:
-                attempt_count = attempt.retry_state.attempt_number
-                try:
-                    result = fn(*args, **kwargs)
-                    if attempt_count > 1:
-                        logger.info(
-                            f"{fn.__name__} succeeded after {attempt_count} attempts"
-                        )
-                    return result
-                except Exception as e:
-                    last_exception = e
-                    if should_retry(e):
-                        logger.warning(
-                            f"{fn.__name__} failed (attempt {attempt_count}/{attempts}): {e}"
-                        )
-                        raise
-                    else:
-                        logger.error(f"{fn.__name__} failed with non-retryable error: {e}")
-                        raise
-            
-            # Should not reach here, but just in case
-            if last_exception:
-                raise last_exception
-            raise RuntimeError("Unexpected retry state")
+            try:
+                result = retryer(fn, *args, **kwargs)
+                if retryer.statistics.get("attempt_number", 1) > 1:
+                    logger.info(f"{fn.__name__} succeeded after retry")
+                return result
+            except Exception as e:
+                logger.error(f"{fn.__name__} failed after all retries: {e}")
+                raise
         
         return wrapper
     

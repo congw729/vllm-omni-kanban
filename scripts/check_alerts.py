@@ -239,6 +239,20 @@ def check_data_freshness(index: dict[str, Any], freshness_threshold_hours: int =
 def main() -> int:
     config = load_json(CONFIG_PATH, {})
     index = load_json(INDEX_PATH, {"dates": []})
+    
+    # Check data freshness first
+    freshness_alert = check_data_freshness(index)
+    if freshness_alert:
+        logger.warning(f"Data freshness alert: {freshness_alert['message']}")
+        # Send alert for stale data
+        message = (
+            f"[vLLM-Omni Kanban Alert] {freshness_alert['level'].upper()} - Data Freshness\n\n"
+            f"{freshness_alert['message']}\n"
+            f"Last update: {index.get('last_updated', 'unknown')}\n"
+        )
+        send_wechat(message, os.getenv("WECHAT_WEBHOOK"))
+        send_email(message)
+    
     if not index["dates"]:
         print("no results available")
         return 0
