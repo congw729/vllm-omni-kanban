@@ -17,6 +17,10 @@ This dashboard tracks one daily snapshot per model and hardware combination for 
   <a class="health-banner__link" href="alerts/">View Alerts</a>
 </div>
 
+<div class="hardware-status-bar" data-hardware-status-src="assets/charts/hardware_status.json">
+  <p class="hardware-status-loading">Loading hardware status...</p>
+</div>
+
 <label class="time-range-control" for="time-range">
   <span class="time-range-control__label">Time Window</span>
   <select id="time-range" data-time-range>
