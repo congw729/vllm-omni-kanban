@@ -3,16 +3,25 @@ from __future__ import annotations
 import os
 import smtplib
 import sys
+import logging
 from datetime import datetime, timedelta
 from email.message import EmailMessage
 from pathlib import Path
 from typing import Any
 
 import requests
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from scripts.common import flatten_metrics, load_json, parse_timestamp, save_json
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 DATA_DIR = ROOT / "data"
 RESULTS_DIR = DATA_DIR / "results"
@@ -187,6 +196,44 @@ def resolve_cleared_alerts(alerts_by_id: dict[str, dict[str, Any]], active_ids: 
     for alert in alerts_by_id.values():
         if alert["id"] not in active_ids and not alert.get("resolved"):
             alert.update({"resolved": True, "resolved_at": latest_timestamp})
+
+
+def check_data_freshness(index: dict[str, Any], freshness_threshold_hours: int = 26) -> dict[str, Any] | None:
+    """Check if data is stale (> freshness_threshold_hours old).
+    
+    Args:
+        index: Index data containing last_updated timestamp
+        freshness_threshold_hours: Maximum age in hours before alert (default: 26)
+        
+    Returns:
+        Alert dict if data is stale, None otherwise
+    """
+    if not index.get("last_updated"):
+        logger.warning("No last_updated timestamp in index")
+        return None
+    
+    last_update_str = index["last_updated"]
+    try:
+        last_updated = parse_timestamp(last_update_str)
+    except (ValueError, TypeError) as e:
+        logger.error(f"Invalid timestamp format: {last_update_str}, error: {e}")
+        return None
+    
+    now = datetime.utcnow()
+    age_hours = (now - last_updated).total_seconds() / 3600
+    
+    if age_hours > freshness_threshold_hours:
+        logger.warning(f"Data stale: last update was {age_hours:.1f} hours ago (threshold: {freshness_threshold_hours}h)")
+        return {
+            "metric": "data_freshness",
+            "level": "warning",
+            "value": round(age_hours, 2),
+            "kind": "absolute",
+            "message": f"Data is {age_hours:.1f} hours old (threshold: {freshness_threshold_hours}h)",
+        }
+    
+    logger.info(f"Data fresh: last update was {age_hours:.1f} hours ago")
+    return None
 
 
 def main() -> int:

@@ -1,0 +1,138 @@
+"""Retry utilities for network operations."""
+
+from __future__ import annotations
+
+import logging
+import os
+from functools import wraps
+from typing import Any, Callable
+
+from tenacity import (
+    RetryError,
+    Retrying,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+)
+
+logger = logging.getLogger(__name__)
+
+# Default retry configuration
+DEFAULT_MAX_ATTEMPTS = 3
+DEFAULT_MIN_WAIT = 2
+DEFAULT_MAX_WAIT = 10
+
+# Exceptions that should trigger a retry
+RETRYABLE_EXCEPTIONS = (
+    ConnectionError,
+    TimeoutError,
+    OSError,
+)
+
+
+def get_retry_config() -> dict[str, Any]:
+    """Get retry configuration from environment variables."""
+    return {
+        "max_attempts": int(os.getenv("RETRY_MAX_ATTEMPTS", DEFAULT_MAX_ATTEMPTS)),
+        "min_wait": int(os.getenv("RETRY_MIN_WAIT", DEFAULT_MIN_WAIT)),
+        "max_wait": int(os.getenv("RETRY_MAX_WAIT", DEFAULT_MAX_WAIT)),
+    }
+
+
+def should_retry(exception: Exception) -> bool:
+    """Determine if an exception should trigger a retry.
+    
+    Args:
+        exception: The exception that was raised
+        
+    Returns:
+        True if the operation should be retried, False otherwise
+    """
+    # Retry on network-related exceptions
+    if isinstance(exception, RETRYABLE_EXCEPTIONS):
+        return True
+    
+    # Retry on specific HTTP errors (e.g., 5xx, 429)
+    if hasattr(exception, "response"):
+        response = getattr(exception, "response", None)
+        if response is not None:
+            status_code = getattr(response, "status_code", None)
+            if status_code in (429, 500, 502, 503, 504):
+                return True
+    
+    return False
+
+
+def with_retry(
+    func: Callable[..., Any] | None = None,
+    *,
+    max_attempts: int | None = None,
+    min_wait: int | None = None,
+    max_wait: int | None = None,
+) -> Any:
+    """Decorator to add retry logic to a function.
+    
+    Can be used as:
+        @with_retry
+        def my_func(): ...
+        
+        @with_retry(max_attempts=5)
+        def my_func(): ...
+    
+    Args:
+        func: The function to wrap
+        max_attempts: Maximum number of retry attempts (default from env)
+        min_wait: Minimum wait time between retries in seconds (default from env)
+        max_wait: Maximum wait time between retries in seconds (default from env)
+        
+    Returns:
+        Wrapped function with retry logic
+    """
+    def decorator(fn: Callable[..., Any]) -> Callable[..., Any]:
+        @wraps(fn)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            config = get_retry_config()
+            attempts = max_attempts or config["max_attempts"]
+            min_w = min_wait or config["min_wait"]
+            max_w = max_wait or config["max_wait"]
+            
+            retryer = Retrying(
+                stop=stop_after_attempt(attempts),
+                wait=wait_exponential(multiplier=1, min=min_w, max=max_w),
+                retry=retry_if_exception_type(RETRYABLE_EXCEPTIONS),
+                reraise=True,
+            )
+            
+            attempt_count = 0
+            last_exception = None
+            
+            for attempt in retryer:
+                attempt_count = attempt.retry_state.attempt_number
+                try:
+                    result = fn(*args, **kwargs)
+                    if attempt_count > 1:
+                        logger.info(
+                            f"{fn.__name__} succeeded after {attempt_count} attempts"
+                        )
+                    return result
+                except Exception as e:
+                    last_exception = e
+                    if should_retry(e):
+                        logger.warning(
+                            f"{fn.__name__} failed (attempt {attempt_count}/{attempts}): {e}"
+                        )
+                        raise
+                    else:
+                        logger.error(f"{fn.__name__} failed with non-retryable error: {e}")
+                        raise
+            
+            # Should not reach here, but just in case
+            if last_exception:
+                raise last_exception
+            raise RuntimeError("Unexpected retry state")
+        
+        return wrapper
+    
+    if func is not None:
+        return decorator(func)
+    return decorator
