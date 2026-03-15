@@ -1,7 +1,9 @@
 # vLLM-Omni Kanban
 
+<div data-dashboard-home hidden></div>
+
 <p class="dashboard-intro">
-This dashboard tracks one daily snapshot per model and hardware combination for vLLM-omni multimodal CI. Start with the model sections to inspect latency, throughput, TTFT, and benchmark movement across the currently selected time window, then use the stability rollups below for a quick fleet sanity check.
+This dashboard tracks one daily snapshot per model and hardware combination for vLLM-omni multimodal CI. Use the homepage for fleet health and pass-rate rollups, then open the dedicated model pages for metric-specific performance analysis.
 </p>
 
 <section class="dashboard-toolbar">
@@ -17,10 +19,6 @@ This dashboard tracks one daily snapshot per model and hardware combination for 
   <a class="health-banner__link" href="alerts/">View Alerts</a>
 </div>
 
-<div class="hardware-status-bar" data-hardware-status-src="assets/charts/hardware_status.json">
-  <p class="hardware-status-loading">Loading hardware status...</p>
-</div>
-
 <label class="time-range-control" for="time-range">
   <span class="time-range-control__label">Time Window</span>
   <select id="time-range" data-time-range>
@@ -34,87 +32,39 @@ This dashboard tracks one daily snapshot per model and hardware combination for 
 
 ## Model Performance
 
-<div class="summary-badges">
-  <span>90-day retention</span>
-  <span>Dispatch + scheduled fetch</span>
-  <span>Regression-aware alerting</span>
-  <span>5 models x 6 hardware targets</span>
+<p class="section-note">Open a dedicated page for each model family to inspect the metrics that matter for that workload.</p>
+
+<div class="model-directory-grid">
+  <a class="model-directory-card" href="models/qwen3-omni/">
+    <span class="model-directory-card__eyebrow">Multimodal</span>
+    <strong>Qwen3 Omni</strong>
+    <span>TTFT, TPOT, TTFP, RTF, throughput</span>
+  </a>
+  <a class="model-directory-card" href="models/qwen3-tts/">
+    <span class="model-directory-card__eyebrow">Audio Synthesis</span>
+    <strong>Qwen3 TTS</strong>
+    <span>TTFT, TPOT, TTFP, RTF, throughput</span>
+  </a>
+  <a class="model-directory-card" href="models/qwen-image/">
+    <span class="model-directory-card__eyebrow">Image Generation</span>
+    <strong>Qwen Image</strong>
+    <span>E2E latency, peak memory</span>
+  </a>
+  <a class="model-directory-card" href="models/qwen-image-edit/">
+    <span class="model-directory-card__eyebrow">Image Editing</span>
+    <strong>Qwen Image Edit</strong>
+    <span>E2E latency, peak memory</span>
+  </a>
+  <a class="model-directory-card" href="models/wan22/">
+    <span class="model-directory-card__eyebrow">Video Generation</span>
+    <strong>WAN 2.2</strong>
+    <span>E2E latency, peak memory</span>
+  </a>
 </div>
 
-<section class="model-section">
-<h3>Qwen Image</h3>
-<p class="section-note">Image-generation performance across the hardware fleet for the selected time window.</p>
-<div class="chart-grid">
-<div class="chart-card">
-<h4>Latency P99</h4>
-<div class="chart-frame" id="chart-qwen-image-latency" data-chart-base="qwen_image_latency_p99_ms"></div>
-</div>
-<div class="chart-card">
-<h4>Throughput</h4>
-<div class="chart-frame" id="chart-qwen-image-throughput" data-chart-base="qwen_image_throughput_tokens_per_sec"></div>
-</div>
-</div>
-</section>
+## Pass Rate
 
-<section class="model-section">
-<h3>Qwen Image Edit</h3>
-<p class="section-note">Editing latency trends for the current selected window.</p>
-<div class="chart-grid">
-<div class="chart-card">
-<h4>Latency P99</h4>
-<div class="chart-frame" id="chart-qwen-image-edit-latency" data-chart-base="qwen_image_edit_latency_p99_ms"></div>
-</div>
-</div>
-</section>
-
-<section class="model-section">
-<h3>WAN 2.2</h3>
-<p class="section-note">Video-generation latency across the selected daily-snapshot range.</p>
-<div class="chart-grid">
-<div class="chart-card">
-<h4>Latency P99</h4>
-<div class="chart-frame" id="chart-wan-latency" data-chart-base="wan22_latency_p99_ms"></div>
-</div>
-</div>
-</section>
-
-<section class="model-section">
-<h3>Qwen3 Omni</h3>
-<p class="section-note">Detailed multimodal performance panel across latency, throughput, TTFT, and benchmark movement.</p>
-<div class="chart-grid">
-<div class="chart-card">
-<h4>Latency P99</h4>
-<div class="chart-frame" id="chart-qwen3-omni-latency" data-chart-base="qwen3_omni_latency_p99_ms"></div>
-</div>
-<div class="chart-card">
-<h4>Throughput</h4>
-<div class="chart-frame" id="chart-qwen3-omni-throughput" data-chart-base="qwen3_omni_throughput_tokens_per_sec"></div>
-</div>
-<div class="chart-card">
-<h4>TTFT</h4>
-<div class="chart-frame" id="chart-qwen3-omni-ttft" data-chart-base="qwen3_omni_ttft_ms"></div>
-</div>
-<div class="chart-card">
-<h4>Benchmark Score</h4>
-<div class="chart-frame" id="chart-qwen3-omni-benchmark" data-chart-base="qwen3_omni_benchmark_score"></div>
-</div>
-</div>
-</section>
-
-<section class="model-section">
-<h3>Qwen3 TTS</h3>
-<p class="section-note">Audio-synthesis latency trends across the selected daily snapshots.</p>
-<div class="chart-grid">
-<div class="chart-card">
-<h4>Latency P99</h4>
-<div class="chart-frame" id="chart-qwen3-tts-latency" data-chart-base="qwen3_tts_latency_p99_ms"></div>
-</div>
-</div>
-</section>
-
-## Stability Follow-Up
-
-<p class="section-note">Use this section to sanity-check overall health after reviewing model-specific performance movement.</p>
+<p class="section-note">Use this section to sanity-check overall health before drilling into the model-specific dashboards.</p>
 
 <div class="follow-up-grid">
 <div class="chart-card">

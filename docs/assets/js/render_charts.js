@@ -1,6 +1,10 @@
 const charts = new Map();
 let resizeBound = false;
 
+function isDashboardHome() {
+  return Boolean(document.querySelector("[data-dashboard-home]"));
+}
+
 function cloneOption(option) {
   return typeof structuredClone === "function"
     ? structuredClone(option)
@@ -64,7 +68,8 @@ function applyTheme(option) {
 
 function chartSrc(container, range) {
   if (container.dataset.chartBase) {
-    return `assets/charts/${container.dataset.chartBase}_${range}.json`;
+    const base = container.dataset.chartBase;
+    return base.includes("/") ? `${base}_${range}.json` : `assets/charts/${base}_${range}.json`;
   }
   return container.dataset.chartSrc || "";
 }
@@ -129,6 +134,204 @@ function formatLatency(value) {
   return typeof value === "number" ? `${value.toFixed(1)} ms` : "--";
 }
 
+function railNav() {
+  return document.querySelector(".md-sidebar--secondary .md-nav--secondary");
+}
+
+function railLinkMap() {
+  return new Map(
+    [...document.querySelectorAll(".md-sidebar--secondary .md-nav--secondary .md-nav__link[href^='#']")]
+      .map((link) => [link.getAttribute("href"), link]),
+  );
+}
+
+function ensureTechnicalRail() {
+  if (!isDashboardHome()) {
+    return;
+  }
+  document.body.classList.add("dashboard-home");
+  const nav = railNav();
+  if (!nav || nav.dataset.technicalRail === "true") {
+    return;
+  }
+
+  const title = nav.querySelector(".md-nav__title");
+  if (title) {
+    title.innerHTML = [
+      '<span class="technical-rail__eyebrow">In This Snapshot</span>',
+      '<span class="technical-rail__snapshot" data-technical-rail-title>Snapshot pending</span>',
+    ].join("");
+  }
+
+  const track = document.createElement("div");
+  track.className = "technical-rail__track";
+  const indicator = document.createElement("div");
+  indicator.className = "technical-rail__indicator";
+  nav.append(track, indicator);
+
+  railLinkMap().forEach((link) => {
+    if (link.dataset.technicalRail === "true") {
+      return;
+    }
+    const labelText = link.textContent.trim();
+    link.dataset.technicalRail = "true";
+    link.textContent = "";
+
+    const content = document.createElement("span");
+    content.className = "technical-rail__content";
+    const dot = document.createElement("span");
+    dot.className = "technical-rail__dot";
+    const label = document.createElement("span");
+    label.className = "technical-rail__label";
+    label.textContent = labelText;
+    const badge = document.createElement("span");
+    badge.className = "technical-rail__badge";
+    badge.hidden = true;
+
+    content.append(dot, label);
+    link.append(content, badge);
+  });
+
+  nav.dataset.technicalRail = "true";
+}
+
+function setRailStatus(hash, status, badgeText = "") {
+  const link = railLinkMap().get(hash);
+  if (!link) {
+    return;
+  }
+
+  const dot = link.querySelector(".technical-rail__dot");
+  const badge = link.querySelector(".technical-rail__badge");
+  if (dot) {
+    dot.className = `technical-rail__dot technical-rail__dot--${status}`;
+  }
+  if (badge) {
+    badge.hidden = !badgeText;
+    badge.textContent = badgeText;
+  }
+}
+
+function updateRailSummary(summary) {
+  if (!isDashboardHome()) {
+    return;
+  }
+  const title = document.querySelector("[data-technical-rail-title]");
+  if (title) {
+    title.textContent = summary.latest_date ? `Snapshot: ${summary.latest_date}` : "Snapshot unavailable";
+  }
+
+  const performanceStatus = typeof summary.overall_pass_rate === "number"
+    ? (summary.overall_pass_rate >= 0.9 ? "healthy" : summary.overall_pass_rate >= 0.8 ? "warning" : "critical")
+    : "unknown";
+  const alertStatus = summary.recent_alerts
+    ? (summary.critical_alerts ? "critical" : "warning")
+    : "healthy";
+
+  setRailStatus("#model-performance", performanceStatus);
+  setRailStatus("#pass-rate", alertStatus);
+  setRailStatus("#recent-alerts", alertStatus, summary.recent_alerts ? String(summary.recent_alerts) : "");
+  setRailStatus("#reports", summary.latest_date ? "healthy" : "unknown");
+}
+
+function updateRailIndicator() {
+  const nav = railNav();
+  const indicator = nav?.querySelector(".technical-rail__indicator");
+  const active = nav?.querySelector(".technical-rail__link--active");
+  if (!nav || !indicator || !active) {
+    return;
+  }
+  indicator.style.opacity = "1";
+  indicator.style.transform = `translateY(${active.offsetTop}px)`;
+  indicator.style.height = `${active.offsetHeight}px`;
+}
+
+function renderRailModelNodes() {
+  if (!isDashboardHome()) {
+    return;
+  }
+  const modelLink = railLinkMap().get("#model-performance");
+  const modelItem = modelLink?.closest(".md-nav__item");
+  if (!modelItem) {
+    return;
+  }
+
+  const models = [...document.querySelectorAll("[data-model-anchor]")]
+    .map((section) => {
+      const heading = section.querySelector("h3");
+      return heading ? { id: section.id, label: heading.textContent.trim() } : null;
+    })
+    .filter(Boolean);
+  if (models.length === 0) {
+    return;
+  }
+
+  const sublist = modelItem.querySelector(".technical-rail__sublist") || document.createElement("ul");
+  sublist.className = "technical-rail__sublist";
+  sublist.innerHTML = models
+    .map((model) => `
+      <li class="technical-rail__subitem">
+        <a href="#${model.id}" class="technical-rail__sublink" data-model-link="${model.id}">${escapeHtml(model.label)}</a>
+      </li>
+    `)
+    .join("");
+
+  if (!sublist.parentElement) {
+    modelItem.append(sublist);
+  }
+}
+
+function bindRailSpy() {
+  if (!isDashboardHome()) {
+    return;
+  }
+  const links = [...railLinkMap().values()];
+  const sections = links
+    .map((link) => ({ link, section: document.querySelector(link.getAttribute("href")) }))
+    .filter((entry) => entry.section);
+  if (sections.length === 0) {
+    return;
+  }
+
+  const refreshActive = () => {
+    let current = sections[0];
+    sections.forEach((entry) => {
+      if (entry.section.getBoundingClientRect().top <= 140) {
+        current = entry;
+      }
+    });
+    sections.forEach(({ link }) => {
+      link.classList.toggle("technical-rail__link--active", link === current.link);
+    });
+
+    const modelLinks = [...document.querySelectorAll(".technical-rail__sublink[data-model-link]")];
+    if (current.link.getAttribute("href") === "#model-performance" && modelLinks.length) {
+      const threshold = 180;
+      let currentModel = modelLinks[0];
+      modelLinks.forEach((link) => {
+        const section = document.getElementById(link.dataset.modelLink);
+        if (section && section.getBoundingClientRect().top <= threshold) {
+          currentModel = link;
+        }
+      });
+      modelLinks.forEach((link) => {
+        link.classList.toggle("technical-rail__sublink--active", link === currentModel);
+      });
+    } else {
+      modelLinks.forEach((link) => link.classList.remove("technical-rail__sublink--active"));
+    }
+
+    updateRailIndicator();
+  };
+
+  window.addEventListener("scroll", refreshActive, { passive: true });
+  window.addEventListener("resize", refreshActive);
+  links.forEach((link) => {
+    link.addEventListener("click", () => window.setTimeout(refreshActive, 80));
+  });
+  refreshActive();
+}
+
 function renderHealth(summary) {
   const banner = document.querySelector("[data-summary-src]");
   if (!banner) {
@@ -152,6 +355,7 @@ function renderHealth(summary) {
       ? `Latest snapshot ${summary.latest_date || "--"} · pass rate ${formatPercent(summary.overall_pass_rate)} · latency ${formatLatency(summary.overall_latency_p99_ms)}`
       : `${criticalAlerts} critical · ${warningAlerts} warning · latest snapshot ${summary.latest_date || "--"}`;
   }
+  updateRailSummary(summary);
 }
 
 async function loadHealth() {
@@ -248,7 +452,10 @@ function observeColorScheme() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  ensureTechnicalRail();
+  renderRailModelNodes();
   bindRangePicker();
+  bindRailSpy();
   observeColorScheme();
   await Promise.all([loadHealth(), loadHardwareStatus(), reloadCharts()]);
 });

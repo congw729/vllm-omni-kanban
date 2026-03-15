@@ -14,7 +14,7 @@
       "category": "image_generation",
       "metrics": {
         "required": ["pass_rate", "latency_p99_ms", "throughput_tokens_per_sec"],
-        "optional": ["image_quality_score", "generation_time_ms"]
+        "optional": ["e2e_latency_ms", "peak_memory_gb", "image_quality_score", "generation_time_ms"]
       },
       "alert_overrides": {}
     },
@@ -23,7 +23,7 @@
       "category": "image_editing",
       "metrics": {
         "required": ["pass_rate", "latency_p99_ms"],
-        "optional": ["edit_quality_score", "generation_time_ms"]
+        "optional": ["e2e_latency_ms", "peak_memory_gb", "edit_quality_score", "generation_time_ms"]
       },
       "alert_overrides": {}
     },
@@ -32,7 +32,7 @@
       "category": "video_generation",
       "metrics": {
         "required": ["pass_rate", "latency_p99_ms"],
-        "optional": ["video_quality_score", "generation_time_ms"]
+        "optional": ["e2e_latency_ms", "peak_memory_gb", "video_quality_score", "generation_time_ms"]
       },
       "alert_overrides": {}
     },
@@ -41,7 +41,7 @@
       "category": "multimodal",
       "metrics": {
         "required": ["pass_rate", "latency_p99_ms", "ttft_ms", "throughput_tokens_per_sec"],
-        "optional": ["benchmark_score"]
+        "optional": ["tpot_ms", "ttfp_ms", "real_time_factor", "benchmark_score"]
       },
       "alert_overrides": {}
     },
@@ -50,7 +50,7 @@
       "category": "audio_synthesis",
       "metrics": {
         "required": ["pass_rate", "latency_p99_ms"],
-        "optional": ["real_time_factor", "audio_quality_mos", "speaker_similarity"]
+        "optional": ["ttft_ms", "tpot_ms", "ttfp_ms", "real_time_factor", "throughput_tokens_per_sec", "audio_quality_mos", "speaker_similarity"]
       },
       "alert_overrides": {
         "latency_p99_ms_critical": 2000

@@ -101,9 +101,10 @@
       "last_triggered": "2026-03-14T06:00:00+08:00",
       "last_seen": "2026-03-14T06:00:00+08:00",
       "suppressed_until": "2026-03-15T14:33:52.521784",
-      "resolved": false,
+      "resolved": true,
       "baseline": 0.8528,
-      "delta": -0.1486
+      "delta": -0.1486,
+      "resolved_at": "2026-03-14T06:00:00+08:00"
     },
     {
       "id": "amd-mi300x-qwen-image-throughput_tokens_per_sec-warning-regression",
@@ -294,9 +295,10 @@
       "last_triggered": "2026-03-14T06:00:00+08:00",
       "last_seen": "2026-03-14T06:00:00+08:00",
       "suppressed_until": "2026-03-15T14:33:52.521784",
-      "resolved": false,
+      "resolved": true,
       "baseline": 0.8378,
-      "delta": -0.0524
+      "delta": -0.0524,
+      "resolved_at": "2026-03-14T06:00:00+08:00"
     },
     {
       "id": "ascend-a2-qwen-image-edit-latency_p99_ms-warning-regression",
@@ -354,9 +356,10 @@
       "last_triggered": "2026-03-14T06:00:00+08:00",
       "last_seen": "2026-03-14T06:00:00+08:00",
       "suppressed_until": "2026-03-15T14:33:52.521784",
-      "resolved": false,
+      "resolved": true,
       "baseline": 0.8416,
-      "delta": -0.1141
+      "delta": -0.1141,
+      "resolved_at": "2026-03-14T06:00:00+08:00"
     },
     {
       "id": "nvidia-h100-wan22-latency_p99_ms-warning-regression",
@@ -429,9 +432,10 @@
       "last_triggered": "2026-03-14T06:00:00+08:00",
       "last_seen": "2026-03-14T06:00:00+08:00",
       "suppressed_until": "2026-03-15T14:33:52.521784",
-      "resolved": false,
+      "resolved": true,
       "baseline": 0.8389,
-      "delta": -0.1091
+      "delta": -0.1091,
+      "resolved_at": "2026-03-14T06:00:00+08:00"
     },
     {
       "id": "ascend-a3-wan22-pass_rate-warning-absolute",
@@ -517,9 +521,10 @@
       "last_triggered": "2026-03-14T06:00:00+08:00",
       "last_seen": "2026-03-14T06:00:00+08:00",
       "suppressed_until": "2026-03-15T14:33:52.521784",
-      "resolved": false,
+      "resolved": true,
       "baseline": 0.8483,
-      "delta": -0.1449
+      "delta": -0.1449,
+      "resolved_at": "2026-03-14T06:00:00+08:00"
     },
     {
       "id": "nvidia-h100-qwen3-omni-ttft_ms-warning-regression",
@@ -547,9 +552,10 @@
       "last_triggered": "2026-03-14T06:00:00+08:00",
       "last_seen": "2026-03-14T06:00:00+08:00",
       "suppressed_until": "2026-03-15T14:33:52.521784",
-      "resolved": false,
+      "resolved": true,
       "baseline": 0.8753,
-      "delta": -0.1307
+      "delta": -0.1307,
+      "resolved_at": "2026-03-14T06:00:00+08:00"
     },
     {
       "id": "nvidia-h20-qwen3-omni-latency_p99_ms-warning-regression",
@@ -870,7 +876,7 @@
       "first_triggered": "2026-03-14T06:00:00+08:00",
       "last_triggered": "2026-03-14T06:00:00+08:00",
       "last_seen": "2026-03-14T06:00:00+08:00",
-      "suppressed_until": "2026-03-15T22:53:01.677493",
+      "suppressed_until": "2026-03-16T11:28:18.101924",
       "resolved": false,
       "baseline": 100.0,
       "delta": 3.7958
@@ -885,7 +891,7 @@
       "first_triggered": "2026-03-14T06:00:00+08:00",
       "last_triggered": "2026-03-14T06:00:00+08:00",
       "last_seen": "2026-03-14T06:00:00+08:00",
-      "suppressed_until": "2026-03-15T22:53:01.677493",
+      "suppressed_until": "2026-03-16T11:28:18.101924",
       "resolved": false,
       "baseline": 100.0,
       "delta": 4.7664
@@ -900,7 +906,7 @@
       "first_triggered": "2026-03-14T06:00:00+08:00",
       "last_triggered": "2026-03-14T06:00:00+08:00",
       "last_seen": "2026-03-14T06:00:00+08:00",
-      "suppressed_until": "2026-03-15T22:53:01.677493",
+      "suppressed_until": "2026-03-16T11:28:18.101924",
       "resolved": false,
       "baseline": 100.0,
       "delta": 3.3146
@@ -915,7 +921,7 @@
       "first_triggered": "2026-03-14T06:00:00+08:00",
       "last_triggered": "2026-03-14T06:00:00+08:00",
       "last_seen": "2026-03-14T06:00:00+08:00",
-      "suppressed_until": "2026-03-15T22:53:01.677493",
+      "suppressed_until": "2026-03-16T11:28:18.101924",
       "resolved": false,
       "baseline": 100.0,
       "delta": 2.444
@@ -930,7 +936,7 @@
       "first_triggered": "2026-03-14T06:00:00+08:00",
       "last_triggered": "2026-03-14T06:00:00+08:00",
       "last_seen": "2026-03-14T06:00:00+08:00",
-      "suppressed_until": "2026-03-15T22:53:01.677493",
+      "suppressed_until": "2026-03-16T11:28:18.101924",
       "resolved": false,
       "baseline": 100.0,
       "delta": 4.6788
@@ -945,7 +951,7 @@
       "first_triggered": "2026-03-14T06:00:00+08:00",
       "last_triggered": "2026-03-14T06:00:00+08:00",
       "last_seen": "2026-03-14T06:00:00+08:00",
-      "suppressed_until": "2026-03-15T22:53:01.677493",
+      "suppressed_until": "2026-03-16T11:28:18.101924",
       "resolved": false,
       "baseline": 100.0,
       "delta": 6.0844
@@ -960,7 +966,7 @@
       "first_triggered": "2026-03-14T06:00:00+08:00",
       "last_triggered": "2026-03-14T06:00:00+08:00",
       "last_seen": "2026-03-14T06:00:00+08:00",
-      "suppressed_until": "2026-03-15T22:53:01.677493",
+      "suppressed_until": "2026-03-16T11:28:18.101924",
       "resolved": false,
       "baseline": 100.0,
       "delta": 3.0437
@@ -975,7 +981,7 @@
       "first_triggered": "2026-03-14T06:00:00+08:00",
       "last_triggered": "2026-03-14T06:00:00+08:00",
       "last_seen": "2026-03-14T06:00:00+08:00",
-      "suppressed_until": "2026-03-15T22:53:01.677493",
+      "suppressed_until": "2026-03-16T11:28:18.101924",
       "resolved": false,
       "baseline": 100.0,
       "delta": 4.1235
@@ -990,7 +996,7 @@
       "first_triggered": "2026-03-14T06:00:00+08:00",
       "last_triggered": "2026-03-14T06:00:00+08:00",
       "last_seen": "2026-03-14T06:00:00+08:00",
-      "suppressed_until": "2026-03-15T22:53:01.677493",
+      "suppressed_until": "2026-03-16T11:28:18.101924",
       "resolved": false,
       "baseline": 100.0,
       "delta": 3.7911
@@ -1005,7 +1011,7 @@
       "first_triggered": "2026-03-14T06:00:00+08:00",
       "last_triggered": "2026-03-14T06:00:00+08:00",
       "last_seen": "2026-03-14T06:00:00+08:00",
-      "suppressed_until": "2026-03-15T22:53:01.677493",
+      "suppressed_until": "2026-03-16T11:28:18.101924",
       "resolved": false,
       "baseline": 100.0,
       "delta": 3.908
@@ -1020,7 +1026,7 @@
       "first_triggered": "2026-03-14T06:00:00+08:00",
       "last_triggered": "2026-03-14T06:00:00+08:00",
       "last_seen": "2026-03-14T06:00:00+08:00",
-      "suppressed_until": "2026-03-15T22:53:01.677493",
+      "suppressed_until": "2026-03-16T11:28:18.101924",
       "resolved": false,
       "baseline": 100.0,
       "delta": 6.3955
@@ -1035,7 +1041,7 @@
       "first_triggered": "2026-03-14T06:00:00+08:00",
       "last_triggered": "2026-03-14T06:00:00+08:00",
       "last_seen": "2026-03-14T06:00:00+08:00",
-      "suppressed_until": "2026-03-15T22:53:01.677493",
+      "suppressed_until": "2026-03-16T11:28:18.101924",
       "resolved": false,
       "baseline": 100.0,
       "delta": 3.8751
@@ -1050,7 +1056,7 @@
       "first_triggered": "2026-03-14T06:00:00+08:00",
       "last_triggered": "2026-03-14T06:00:00+08:00",
       "last_seen": "2026-03-14T06:00:00+08:00",
-      "suppressed_until": "2026-03-15T22:53:01.677493",
+      "suppressed_until": "2026-03-16T11:28:18.101924",
       "resolved": false,
       "baseline": 100.0,
       "delta": 4.3434
@@ -1065,7 +1071,7 @@
       "first_triggered": "2026-03-14T06:00:00+08:00",
       "last_triggered": "2026-03-14T06:00:00+08:00",
       "last_seen": "2026-03-14T06:00:00+08:00",
-      "suppressed_until": "2026-03-15T22:53:01.677493",
+      "suppressed_until": "2026-03-16T11:28:18.101924",
       "resolved": false,
       "baseline": 100.0,
       "delta": 3.4687
@@ -1080,7 +1086,7 @@
       "first_triggered": "2026-03-14T06:00:00+08:00",
       "last_triggered": "2026-03-14T06:00:00+08:00",
       "last_seen": "2026-03-14T06:00:00+08:00",
-      "suppressed_until": "2026-03-15T22:53:01.677493",
+      "suppressed_until": "2026-03-16T11:28:18.101924",
       "resolved": false,
       "baseline": 100.0,
       "delta": 3.9297
@@ -1095,10 +1101,85 @@
       "first_triggered": "2026-03-14T06:00:00+08:00",
       "last_triggered": "2026-03-14T06:00:00+08:00",
       "last_seen": "2026-03-14T06:00:00+08:00",
-      "suppressed_until": "2026-03-15T22:53:01.677493",
+      "suppressed_until": "2026-03-16T11:28:18.101924",
       "resolved": false,
       "baseline": 100.0,
       "delta": 2.4795
+    },
+    {
+      "id": "ascend-a2-qwen-image-edit-benchmark_score-warning-regression",
+      "hardware": "Ascend-A2",
+      "model": "Qwen-Image-edit",
+      "metric": "benchmark_score",
+      "level": "warning",
+      "kind": "regression",
+      "first_triggered": "2026-03-14T06:00:00+08:00",
+      "last_triggered": "2026-03-14T06:00:00+08:00",
+      "last_seen": "2026-03-14T06:00:00+08:00",
+      "suppressed_until": "2026-03-16T11:28:17.600708",
+      "resolved": false,
+      "baseline": 0.8565,
+      "delta": -0.0811
+    },
+    {
+      "id": "nvidia-h20-qwen3-omni-benchmark_score-warning-regression",
+      "hardware": "NVIDIA-H20",
+      "model": "Qwen3-Omni",
+      "metric": "benchmark_score",
+      "level": "warning",
+      "kind": "regression",
+      "first_triggered": "2026-03-14T06:00:00+08:00",
+      "last_triggered": "2026-03-14T06:00:00+08:00",
+      "last_seen": "2026-03-14T06:00:00+08:00",
+      "suppressed_until": "2026-03-16T11:28:17.600708",
+      "resolved": false,
+      "baseline": 0.8419,
+      "delta": -0.0534
+    },
+    {
+      "id": "ascend-a2-qwen3-omni-benchmark_score-warning-regression",
+      "hardware": "Ascend-A2",
+      "model": "Qwen3-Omni",
+      "metric": "benchmark_score",
+      "level": "warning",
+      "kind": "regression",
+      "first_triggered": "2026-03-14T06:00:00+08:00",
+      "last_triggered": "2026-03-14T06:00:00+08:00",
+      "last_seen": "2026-03-14T06:00:00+08:00",
+      "suppressed_until": "2026-03-16T11:28:17.600708",
+      "resolved": false,
+      "baseline": 0.8443,
+      "delta": -0.0895
+    },
+    {
+      "id": "nvidia-a100-qwen3-tts-benchmark_score-warning-regression",
+      "hardware": "NVIDIA-A100",
+      "model": "Qwen3-TTS",
+      "metric": "benchmark_score",
+      "level": "warning",
+      "kind": "regression",
+      "first_triggered": "2026-03-14T06:00:00+08:00",
+      "last_triggered": "2026-03-14T06:00:00+08:00",
+      "last_seen": "2026-03-14T06:00:00+08:00",
+      "suppressed_until": "2026-03-16T11:28:17.600708",
+      "resolved": false,
+      "baseline": 0.8353,
+      "delta": -0.1097
+    },
+    {
+      "id": "amd-mi300x-qwen3-tts-benchmark_score-warning-regression",
+      "hardware": "AMD-MI300X",
+      "model": "Qwen3-TTS",
+      "metric": "benchmark_score",
+      "level": "warning",
+      "kind": "regression",
+      "first_triggered": "2026-03-14T06:00:00+08:00",
+      "last_triggered": "2026-03-14T06:00:00+08:00",
+      "last_seen": "2026-03-14T06:00:00+08:00",
+      "suppressed_until": "2026-03-16T11:28:17.600708",
+      "resolved": false,
+      "baseline": 0.8062,
+      "delta": -0.0527
     }
   ]
 }

@@ -28,6 +28,11 @@ def make_result(date_str: str, model: str, hardware: str, base: dict) -> dict:
     latency_p50 = round(latency_p99 * (0.28 + rng.random() * 0.16), 2)
     throughput = round(900 + rng.random() * 900, 2)
     ttft = round(45 + rng.random() * 120, 2)
+    tpot = round(10 + rng.random() * 55, 2)
+    ttfp = round(28 + rng.random() * 90, 2)
+    rtf = round(0.22 + rng.random() * 0.95, 3)
+    e2e_latency = round(latency_p99 * (1.18 + rng.random() * 0.4), 2)
+    peak_memory = round(11 + rng.random() * 34, 2)
     benchmark_score = round(0.72 + rng.random() * 0.24, 4)
     crash_count = 1 if pass_rate < 0.9 and rng.random() < 0.18 else 0
 
@@ -38,7 +43,12 @@ def make_result(date_str: str, model: str, hardware: str, base: dict) -> dict:
     item["metrics"]["performance"]["latency_p50_ms"] = latency_p50
     item["metrics"]["performance"]["throughput_tokens_per_sec"] = throughput
     item["metrics"]["performance"]["ttft_ms"] = ttft
+    item["metrics"]["performance"]["tpot_ms"] = tpot
+    item["metrics"]["performance"]["ttfp_ms"] = ttfp
+    item["metrics"]["performance"]["e2e_latency_ms"] = e2e_latency
+    item["metrics"]["performance"]["peak_memory_gb"] = peak_memory
     item["metrics"]["accuracy"]["benchmark_score"] = benchmark_score
+    item["metrics"]["custom"]["real_time_factor"] = rtf
     item["metrics"]["custom"]["audio_quality_mos"] = round(3.8 + rng.random() * 0.9, 2)
     return item
 
