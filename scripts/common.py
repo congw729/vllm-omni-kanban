@@ -23,6 +23,9 @@ def parse_timestamp(value: str) -> datetime:
 
 def flatten_metrics(metrics: dict[str, Any]) -> dict[str, Any]:
     flat: dict[str, Any] = {}
+    for key, value in metrics.items():
+        if key not in {"stability", "performance", "accuracy", "custom"} and not isinstance(value, dict):
+            flat[key] = value
     for section in ("stability", "performance", "accuracy", "custom"):
         payload = metrics.get(section, {})
         if isinstance(payload, dict):

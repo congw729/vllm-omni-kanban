@@ -16,12 +16,34 @@ INDEX_PATH = DATA_DIR / "index.json"
 CONFIG_PATH = DATA_DIR / "config.json"
 ALERTS_PATH = DATA_DIR / "alerts.json"
 CHARTS_DIR = ROOT / "docs" / "assets" / "charts"
-MODEL_METRICS = [
-    ("latency_p99_ms", "Latency P99 (ms)", None, None),
-    ("throughput_tokens_per_sec", "Throughput", None, None),
-    ("ttft_ms", "TTFT (ms)", None, None),
-    ("benchmark_score", "Benchmark Score", 0, 1),
-]
+MODEL_METRICS = {
+    "Qwen3-Omni": [
+        ("ttft_ms", None, None),
+        ("tpot_ms", None, None),
+        ("ttfp_ms", None, None),
+        ("real_time_factor", None, None),
+        ("throughput_tokens_per_sec", None, None),
+    ],
+    "Qwen3-TTS": [
+        ("ttft_ms", None, None),
+        ("tpot_ms", None, None),
+        ("ttfp_ms", None, None),
+        ("real_time_factor", None, None),
+        ("throughput_tokens_per_sec", None, None),
+    ],
+    "Qwen-image": [
+        ("e2e_latency_ms", None, None),
+        ("peak_memory_gb", None, None),
+    ],
+    "Qwen-Image-edit": [
+        ("e2e_latency_ms", None, None),
+        ("peak_memory_gb", None, None),
+    ],
+    "WAN2.2": [
+        ("e2e_latency_ms", None, None),
+        ("peak_memory_gb", None, None),
+    ],
+}
 RANGE_WINDOWS = {"1d": 1, "7d": 7, "30d": 30}
 
 def save_chart(name: str, option: dict[str, Any]) -> None:
@@ -191,7 +213,7 @@ def main() -> int:
     save_chart("hardware_status", build_hardware_status(config, latest_results))
     for model, model_config in config.get("models", {}).items():
         available_metrics = set(model_config["metrics"]["required"]) | set(model_config["metrics"]["optional"])
-        for metric, label, y_min, y_max in MODEL_METRICS:
+        for metric, y_min, y_max in MODEL_METRICS.get(model, []):
             if metric not in available_metrics:
                 continue
             for range_key, window in RANGE_WINDOWS.items():

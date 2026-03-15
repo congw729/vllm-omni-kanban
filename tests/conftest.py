@@ -26,10 +26,14 @@ def sample_ci_result() -> dict:
                 "latency_p99_ms": 350,
                 "latency_p50_ms": 120,
                 "throughput_tokens_per_sec": 1500,
-                "ttft_ms": 85
+                "ttft_ms": 85,
+                "tpot_ms": 24,
+                "ttfp_ms": 63,
+                "e2e_latency_ms": 480,
+                "peak_memory_gb": 18.5
             },
             "accuracy": {"benchmark_score": 0.89},
-            "custom": {"audio_quality_mos": 4.2},
+            "custom": {"audio_quality_mos": 4.2, "real_time_factor": 0.72},
         },
     }
 

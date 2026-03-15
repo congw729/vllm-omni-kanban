@@ -19,13 +19,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 153.47,
           "throughput_tokens_per_sec": 969.41,
-          "ttft_ms": 147.11
+          "ttft_ms": 147.11,
+          "tpot_ms": 46.01,
+          "ttfp_ms": 60.97,
+          "e2e_latency_ms": 535.3,
+          "peak_memory_gb": 28.44
         },
         "accuracy": {
-          "benchmark_score": 0.8771
+          "benchmark_score": 0.9029
         },
         "custom": {
-          "audio_quality_mos": 4.13
+          "audio_quality_mos": 4.41,
+          "real_time_factor": 0.302
         }
       }
     },
@@ -47,13 +52,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 158.39,
           "throughput_tokens_per_sec": 1543.61,
-          "ttft_ms": 93.82
+          "ttft_ms": 93.82,
+          "tpot_ms": 44.98,
+          "ttfp_ms": 88.85,
+          "e2e_latency_ms": 607.03,
+          "peak_memory_gb": 41.67
         },
         "accuracy": {
-          "benchmark_score": 0.8727
+          "benchmark_score": 0.7887
         },
         "custom": {
-          "audio_quality_mos": 4.54
+          "audio_quality_mos": 4.06,
+          "real_time_factor": 1.006
         }
       }
     },
@@ -75,13 +85,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 243.66,
           "throughput_tokens_per_sec": 1241.89,
-          "ttft_ms": 130.05
+          "ttft_ms": 130.05,
+          "tpot_ms": 15.61,
+          "ttfp_ms": 44.64,
+          "e2e_latency_ms": 909.5,
+          "peak_memory_gb": 38.24
         },
         "accuracy": {
-          "benchmark_score": 0.7445
+          "benchmark_score": 0.7361
         },
         "custom": {
-          "audio_quality_mos": 3.97
+          "audio_quality_mos": 4.67,
+          "real_time_factor": 0.716
         }
       }
     },
@@ -103,13 +118,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 141.25,
           "throughput_tokens_per_sec": 1675.78,
-          "ttft_ms": 69.86
+          "ttft_ms": 69.86,
+          "tpot_ms": 39.17,
+          "ttfp_ms": 53.33,
+          "e2e_latency_ms": 594.66,
+          "peak_memory_gb": 35.98
         },
         "accuracy": {
-          "benchmark_score": 0.8473
+          "benchmark_score": 0.9424
         },
         "custom": {
-          "audio_quality_mos": 4.05
+          "audio_quality_mos": 4.26,
+          "real_time_factor": 0.955
         }
       }
     },
@@ -131,13 +151,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 134.07,
           "throughput_tokens_per_sec": 1590.59,
-          "ttft_ms": 82.13
+          "ttft_ms": 82.13,
+          "tpot_ms": 56.86,
+          "ttfp_ms": 60.03,
+          "e2e_latency_ms": 750.49,
+          "peak_memory_gb": 17.99
         },
         "accuracy": {
-          "benchmark_score": 0.9245
+          "benchmark_score": 0.7971
         },
         "custom": {
-          "audio_quality_mos": 4.12
+          "audio_quality_mos": 4.48,
+          "real_time_factor": 0.554
         }
       }
     },
@@ -159,13 +184,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 208.18,
           "throughput_tokens_per_sec": 1387.14,
-          "ttft_ms": 60.37
+          "ttft_ms": 60.37,
+          "tpot_ms": 46.2,
+          "ttfp_ms": 105.46,
+          "e2e_latency_ms": 751.9,
+          "peak_memory_gb": 32.56
         },
         "accuracy": {
-          "benchmark_score": 0.878
+          "benchmark_score": 0.7539
         },
         "custom": {
-          "audio_quality_mos": 4.57
+          "audio_quality_mos": 4.16,
+          "real_time_factor": 0.753
         }
       }
     },
@@ -187,13 +217,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 97.54,
           "throughput_tokens_per_sec": 1633.43,
-          "ttft_ms": 151.04
+          "ttft_ms": 151.04,
+          "tpot_ms": 17.22,
+          "ttfp_ms": 93.62,
+          "e2e_latency_ms": 486.52,
+          "peak_memory_gb": 36.23
         },
         "accuracy": {
-          "benchmark_score": 0.7515
+          "benchmark_score": 0.7365
         },
         "custom": {
-          "audio_quality_mos": 4.46
+          "audio_quality_mos": 4.04,
+          "real_time_factor": 0.927
         }
       }
     },
@@ -215,13 +250,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 181.43,
           "throughput_tokens_per_sec": 1449.54,
-          "ttft_ms": 66.22
+          "ttft_ms": 66.22,
+          "tpot_ms": 46.34,
+          "ttfp_ms": 31.45,
+          "e2e_latency_ms": 812.66,
+          "peak_memory_gb": 12.74
         },
         "accuracy": {
-          "benchmark_score": 0.8786
+          "benchmark_score": 0.9313
         },
         "custom": {
-          "audio_quality_mos": 3.83
+          "audio_quality_mos": 4.26,
+          "real_time_factor": 0.825
         }
       }
     },
@@ -243,13 +283,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 147.2,
           "throughput_tokens_per_sec": 1184.33,
-          "ttft_ms": 137.73
+          "ttft_ms": 137.73,
+          "tpot_ms": 15.99,
+          "ttfp_ms": 78.5,
+          "e2e_latency_ms": 660.14,
+          "peak_memory_gb": 28.3
         },
         "accuracy": {
-          "benchmark_score": 0.7461
+          "benchmark_score": 0.8752
         },
         "custom": {
-          "audio_quality_mos": 4.3
+          "audio_quality_mos": 4.59,
+          "real_time_factor": 0.732
         }
       }
     },
@@ -271,13 +316,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 136.5,
           "throughput_tokens_per_sec": 1398.24,
-          "ttft_ms": 156.48
+          "ttft_ms": 156.48,
+          "tpot_ms": 30.59,
+          "ttfp_ms": 80.54,
+          "e2e_latency_ms": 563.16,
+          "peak_memory_gb": 13.26
         },
         "accuracy": {
-          "benchmark_score": 0.8098
+          "benchmark_score": 0.8245
         },
         "custom": {
-          "audio_quality_mos": 4.33
+          "audio_quality_mos": 4.62,
+          "real_time_factor": 0.895
         }
       }
     },
@@ -299,13 +349,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 233.54,
           "throughput_tokens_per_sec": 1020.72,
-          "ttft_ms": 98.03
+          "ttft_ms": 98.03,
+          "tpot_ms": 11.98,
+          "ttfp_ms": 59.72,
+          "e2e_latency_ms": 817.72,
+          "peak_memory_gb": 43.7
         },
         "accuracy": {
-          "benchmark_score": 0.7287
+          "benchmark_score": 0.8287
         },
         "custom": {
-          "audio_quality_mos": 4.12
+          "audio_quality_mos": 3.83,
+          "real_time_factor": 0.498
         }
       }
     },
@@ -327,13 +382,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 137.01,
           "throughput_tokens_per_sec": 1432.09,
-          "ttft_ms": 82.26
+          "ttft_ms": 82.26,
+          "tpot_ms": 46.62,
+          "ttfp_ms": 88.71,
+          "e2e_latency_ms": 573.58,
+          "peak_memory_gb": 36.98
         },
         "accuracy": {
-          "benchmark_score": 0.8798
+          "benchmark_score": 0.8323
         },
         "custom": {
-          "audio_quality_mos": 4.41
+          "audio_quality_mos": 4.53,
+          "real_time_factor": 0.606
         }
       }
     },
@@ -355,13 +415,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 252.45,
           "throughput_tokens_per_sec": 1492.01,
-          "ttft_ms": 82.79
+          "ttft_ms": 82.79,
+          "tpot_ms": 20.23,
+          "ttfp_ms": 83.15,
+          "e2e_latency_ms": 974.85,
+          "peak_memory_gb": 35.51
         },
         "accuracy": {
-          "benchmark_score": 0.7646
+          "benchmark_score": 0.9023
         },
         "custom": {
-          "audio_quality_mos": 4.35
+          "audio_quality_mos": 4.05,
+          "real_time_factor": 0.357
         }
       }
     },
@@ -383,13 +448,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 173.39,
           "throughput_tokens_per_sec": 1101.01,
-          "ttft_ms": 87.35
+          "ttft_ms": 87.35,
+          "tpot_ms": 21.1,
+          "ttfp_ms": 56.19,
+          "e2e_latency_ms": 963.85,
+          "peak_memory_gb": 29.14
         },
         "accuracy": {
-          "benchmark_score": 0.7684
+          "benchmark_score": 0.773
         },
         "custom": {
-          "audio_quality_mos": 4.1
+          "audio_quality_mos": 3.81,
+          "real_time_factor": 0.541
         }
       }
     },
@@ -411,13 +481,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 97.0,
           "throughput_tokens_per_sec": 1245.27,
-          "ttft_ms": 47.4
+          "ttft_ms": 47.4,
+          "tpot_ms": 60.89,
+          "ttfp_ms": 105.69,
+          "e2e_latency_ms": 292.75,
+          "peak_memory_gb": 23.0
         },
         "accuracy": {
-          "benchmark_score": 0.9421
+          "benchmark_score": 0.947
         },
         "custom": {
-          "audio_quality_mos": 4.58
+          "audio_quality_mos": 4.56,
+          "real_time_factor": 1.167
         }
       }
     },
@@ -439,13 +514,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 127.72,
           "throughput_tokens_per_sec": 1092.33,
-          "ttft_ms": 161.75
+          "ttft_ms": 161.75,
+          "tpot_ms": 32.02,
+          "ttfp_ms": 113.96,
+          "e2e_latency_ms": 386.07,
+          "peak_memory_gb": 13.28
         },
         "accuracy": {
-          "benchmark_score": 0.8161
+          "benchmark_score": 0.8158
         },
         "custom": {
-          "audio_quality_mos": 4.66
+          "audio_quality_mos": 4.69,
+          "real_time_factor": 0.689
         }
       }
     },
@@ -467,13 +547,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 230.72,
           "throughput_tokens_per_sec": 1536.3,
-          "ttft_ms": 143.67
+          "ttft_ms": 143.67,
+          "tpot_ms": 26.19,
+          "ttfp_ms": 44.01,
+          "e2e_latency_ms": 767.0,
+          "peak_memory_gb": 23.38
         },
         "accuracy": {
-          "benchmark_score": 0.7907
+          "benchmark_score": 0.8232
         },
         "custom": {
-          "audio_quality_mos": 3.96
+          "audio_quality_mos": 4.39,
+          "real_time_factor": 0.297
         }
       }
     },
@@ -495,13 +580,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 164.55,
           "throughput_tokens_per_sec": 1613.92,
-          "ttft_ms": 112.07
+          "ttft_ms": 112.07,
+          "tpot_ms": 27.3,
+          "ttfp_ms": 63.08,
+          "e2e_latency_ms": 585.82,
+          "peak_memory_gb": 15.52
         },
         "accuracy": {
-          "benchmark_score": 0.7955
+          "benchmark_score": 0.8736
         },
         "custom": {
-          "audio_quality_mos": 3.92
+          "audio_quality_mos": 4.2,
+          "real_time_factor": 0.346
         }
       }
     },
@@ -523,13 +613,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 269.5,
           "throughput_tokens_per_sec": 1548.18,
-          "ttft_ms": 64.89
+          "ttft_ms": 64.89,
+          "tpot_ms": 16.32,
+          "ttfp_ms": 83.63,
+          "e2e_latency_ms": 963.98,
+          "peak_memory_gb": 34.3
         },
         "accuracy": {
-          "benchmark_score": 0.7476
+          "benchmark_score": 0.7269
         },
         "custom": {
-          "audio_quality_mos": 4.45
+          "audio_quality_mos": 4.66,
+          "real_time_factor": 0.908
         }
       }
     },
@@ -551,13 +646,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 279.76,
           "throughput_tokens_per_sec": 1132.19,
-          "ttft_ms": 164.09
+          "ttft_ms": 164.09,
+          "tpot_ms": 60.25,
+          "ttfp_ms": 33.62,
+          "e2e_latency_ms": 900.26,
+          "peak_memory_gb": 24.27
         },
         "accuracy": {
-          "benchmark_score": 0.9393
+          "benchmark_score": 0.7351
         },
         "custom": {
-          "audio_quality_mos": 3.86
+          "audio_quality_mos": 4.11,
+          "real_time_factor": 0.362
         }
       }
     },
@@ -579,13 +679,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 94.49,
           "throughput_tokens_per_sec": 1491.24,
-          "ttft_ms": 133.79
+          "ttft_ms": 133.79,
+          "tpot_ms": 52.55,
+          "ttfp_ms": 79.82,
+          "e2e_latency_ms": 477.99,
+          "peak_memory_gb": 34.81
         },
         "accuracy": {
-          "benchmark_score": 0.9057
+          "benchmark_score": 0.9253
         },
         "custom": {
-          "audio_quality_mos": 4.32
+          "audio_quality_mos": 3.93,
+          "real_time_factor": 0.661
         }
       }
     },
@@ -607,13 +712,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 298.02,
           "throughput_tokens_per_sec": 1068.47,
-          "ttft_ms": 132.61
+          "ttft_ms": 132.61,
+          "tpot_ms": 29.7,
+          "ttfp_ms": 75.36,
+          "e2e_latency_ms": 928.78,
+          "peak_memory_gb": 13.09
         },
         "accuracy": {
-          "benchmark_score": 0.806
+          "benchmark_score": 0.8937
         },
         "custom": {
-          "audio_quality_mos": 4.21
+          "audio_quality_mos": 4.66,
+          "real_time_factor": 0.648
         }
       }
     },
@@ -635,13 +745,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 124.5,
           "throughput_tokens_per_sec": 945.25,
-          "ttft_ms": 137.13
+          "ttft_ms": 137.13,
+          "tpot_ms": 15.95,
+          "ttfp_ms": 98.16,
+          "e2e_latency_ms": 434.14,
+          "peak_memory_gb": 28.59
         },
         "accuracy": {
-          "benchmark_score": 0.746
+          "benchmark_score": 0.9373
         },
         "custom": {
-          "audio_quality_mos": 4.5
+          "audio_quality_mos": 4.16,
+          "real_time_factor": 0.726
         }
       }
     },
@@ -663,13 +778,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 203.62,
           "throughput_tokens_per_sec": 1708.28,
-          "ttft_ms": 151.76
+          "ttft_ms": 151.76,
+          "tpot_ms": 26.37,
+          "ttfp_ms": 67.02,
+          "e2e_latency_ms": 681.28,
+          "peak_memory_gb": 24.26
         },
         "accuracy": {
-          "benchmark_score": 0.7914
+          "benchmark_score": 0.9428
         },
         "custom": {
-          "audio_quality_mos": 4.19
+          "audio_quality_mos": 4.3,
+          "real_time_factor": 0.568
         }
       }
     },
@@ -691,13 +811,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 99.25,
           "throughput_tokens_per_sec": 1461.27,
-          "ttft_ms": 82.45
+          "ttft_ms": 82.45,
+          "tpot_ms": 19.88,
+          "ttfp_ms": 64.56,
+          "e2e_latency_ms": 354.52,
+          "peak_memory_gb": 14.56
         },
         "accuracy": {
-          "benchmark_score": 0.7631
+          "benchmark_score": 0.7526
         },
         "custom": {
-          "audio_quality_mos": 3.85
+          "audio_quality_mos": 4.47,
+          "real_time_factor": 0.278
         }
       }
     },
@@ -719,13 +844,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 237.36,
           "throughput_tokens_per_sec": 1272.09,
-          "ttft_ms": 68.19
+          "ttft_ms": 68.19,
+          "tpot_ms": 38.6,
+          "ttfp_ms": 34.49,
+          "e2e_latency_ms": 896.36,
+          "peak_memory_gb": 11.89
         },
         "accuracy": {
-          "benchmark_score": 0.8448
+          "benchmark_score": 0.9045
         },
         "custom": {
-          "audio_quality_mos": 3.86
+          "audio_quality_mos": 4.07,
+          "real_time_factor": 0.856
         }
       }
     },
@@ -747,13 +877,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 210.35,
           "throughput_tokens_per_sec": 900.59,
-          "ttft_ms": 64.96
+          "ttft_ms": 64.96,
+          "tpot_ms": 58.08,
+          "ttfp_ms": 79.77,
+          "e2e_latency_ms": 829.4,
+          "peak_memory_gb": 19.64
         },
         "accuracy": {
-          "benchmark_score": 0.9298
+          "benchmark_score": 0.8701
         },
         "custom": {
-          "audio_quality_mos": 4.32
+          "audio_quality_mos": 4.02,
+          "real_time_factor": 0.686
         }
       }
     },
@@ -775,13 +910,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 221.05,
           "throughput_tokens_per_sec": 1258.9,
-          "ttft_ms": 91.19
+          "ttft_ms": 91.19,
+          "tpot_ms": 19.23,
+          "ttfp_ms": 71.62,
+          "e2e_latency_ms": 801.34,
+          "peak_memory_gb": 39.17
         },
         "accuracy": {
-          "benchmark_score": 0.7603
+          "benchmark_score": 0.8268
         },
         "custom": {
-          "audio_quality_mos": 4.24
+          "audio_quality_mos": 4.52,
+          "real_time_factor": 1.046
         }
       }
     },
@@ -803,13 +943,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 99.69,
           "throughput_tokens_per_sec": 1196.48,
-          "ttft_ms": 151.0
+          "ttft_ms": 151.0,
+          "tpot_ms": 15.18,
+          "ttfp_ms": 33.07,
+          "e2e_latency_ms": 376.21,
+          "peak_memory_gb": 28.26
         },
         "accuracy": {
-          "benchmark_score": 0.7426
+          "benchmark_score": 0.9479
         },
         "custom": {
-          "audio_quality_mos": 3.85
+          "audio_quality_mos": 4.17,
+          "real_time_factor": 0.606
         }
       }
     },
@@ -831,13 +976,18 @@
           "latency_p99_ms": 100,
           "latency_p50_ms": 200.22,
           "throughput_tokens_per_sec": 1324.8,
-          "ttft_ms": 102.47
+          "ttft_ms": 102.47,
+          "tpot_ms": 42.48,
+          "ttfp_ms": 80.94,
+          "e2e_latency_ms": 891.94,
+          "peak_memory_gb": 42.02
         },
         "accuracy": {
-          "benchmark_score": 0.8617
+          "benchmark_score": 0.8078
         },
         "custom": {
-          "audio_quality_mos": 4.33
+          "audio_quality_mos": 4.53,
+          "real_time_factor": 1.128
         }
       }
     }

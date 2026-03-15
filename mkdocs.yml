@@ -20,6 +20,12 @@ plugins:
   - search
 nav:
   - Home: index.md
+  - Models:
+      - Qwen3 Omni: models/qwen3-omni.md
+      - Qwen3 TTS: models/qwen3-tts.md
+      - Qwen Image: models/qwen-image.md
+      - Qwen Image Edit: models/qwen-image-edit.md
+      - WAN 2.2: models/wan22.md
   - Alerts: alerts.md
   - Reports:
       - Archive: reports/index.md

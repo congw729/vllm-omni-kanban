@@ -39,7 +39,7 @@
       "name": "NVIDIA A100",
       "type": "line",
       "data": [
-        383.57
+        533.5699999999999
       ],
       "smooth": true
     },
@@ -47,7 +47,7 @@
       "name": "NVIDIA H100",
       "type": "line",
       "data": [
-        681.63
+        831.63
       ],
       "smooth": true
     },
@@ -55,7 +55,7 @@
       "name": "NVIDIA H20",
       "type": "line",
       "data": [
-        329.58
+        479.58
       ],
       "smooth": true
     },
@@ -63,7 +63,7 @@
       "name": "AMD MI300X",
       "type": "line",
       "data": [
-        426.64
+        576.64
       ],
       "smooth": true
     },
@@ -71,7 +71,7 @@
       "name": "Ascend NPU A2",
       "type": "line",
       "data": [
-        281.46
+        431.46
       ],
       "smooth": true
     },
@@ -79,7 +79,7 @@
       "name": "Ascend NPU A3",
       "type": "line",
       "data": [
-        194.4
+        344.4
       ],
       "smooth": true
     }
