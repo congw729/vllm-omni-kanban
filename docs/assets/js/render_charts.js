@@ -112,6 +112,15 @@ async function reloadCharts() {
   await Promise.all(containers.map((container) => loadChart(container)));
 }
 
+function escapeHtml(text) {
+  if (typeof text !== "string") {
+    return "";
+  }
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 function formatPercent(value) {
   return typeof value === "number" ? `${(value * 100).toFixed(1)}%` : "--";
 }
@@ -191,9 +200,9 @@ function renderHardwareStatus(data) {
       const passRateText = typeof hw.pass_rate === "number" ? formatPercent(hw.pass_rate) : "--";
       const latencyText = typeof hw.latency_p99_ms === "number" ? formatLatency(hw.latency_p99_ms) : "--";
       return `
-        <div class="hardware-status-card hardware-status-card--${hw.status}">
+        <div class="hardware-status-card hardware-status-card--${escapeHtml(hw.status)}">
           <span class="hardware-status-icon">${icon}</span>
-          <span class="hardware-status-name">${hw.display_name}</span>
+          <span class="hardware-status-name">${escapeHtml(hw.display_name)}</span>
           <span class="hardware-status-pass">${passRateText}</span>
           <span class="hardware-status-latency">${latencyText}</span>
         </div>
