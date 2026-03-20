@@ -318,6 +318,220 @@ body.dashboard-home .technical-rail__sublink--active {
   background: linear-gradient(180deg, var(--dashboard-healthy-bg) 0%, var(--dashboard-panel-bg) 100%);
 }
 
+.omni-history-page {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.omni-section {
+  padding: 1.2rem;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 1.2rem;
+  background: var(--dashboard-panel-bg);
+  box-shadow: var(--dashboard-shadow);
+}
+
+.omni-section__header {
+  margin-bottom: 1rem;
+}
+
+.omni-section__header h2,
+.omni-chart-card__header h3 {
+  margin: 0;
+  color: var(--dashboard-text);
+}
+
+.omni-section__header p,
+.omni-chart-card__header p {
+  margin: 0.35rem 0 0;
+  color: var(--dashboard-soft-text);
+}
+
+.omni-filter-bar {
+  display: grid;
+  gap: 0.85rem;
+}
+
+@media screen and (min-width: 60em) {
+  .omni-filter-bar {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.omni-filter {
+  display: grid;
+  gap: 0.38rem;
+}
+
+.omni-filter__label,
+.omni-summary-card__eyebrow {
+  color: var(--dashboard-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.omni-filter__input,
+.omni-filter__reset {
+  min-height: 2.75rem;
+  padding: 0.72rem 0.9rem;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 0.9rem;
+  background: var(--dashboard-panel-strong);
+  color: var(--dashboard-text);
+}
+
+.omni-filter__input:focus {
+  outline: 2px solid rgba(59, 130, 246, 0.22);
+  border-color: rgba(59, 130, 246, 0.45);
+}
+
+.omni-filter__reset {
+  align-self: end;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.omni-summary-grid {
+  display: grid;
+  gap: 0.9rem;
+}
+
+@media screen and (min-width: 48em) {
+  .omni-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.omni-summary-card,
+.omni-chart-card,
+.omni-snapshot-card {
+  padding: 1rem 1.05rem;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 1rem;
+  background: var(--dashboard-panel-strong);
+}
+
+.omni-summary-card__value,
+.omni-snapshot-card__value {
+  display: block;
+  margin-top: 0.3rem;
+  color: var(--dashboard-text);
+  font-size: 1.15rem;
+}
+
+.omni-chart-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.omni-chart-card__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 0.9rem;
+}
+
+.omni-chart-card__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: var(--dashboard-badge-bg);
+  color: var(--dashboard-badge-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.omni-chart-frame {
+  min-height: 24rem;
+}
+
+.omni-more-charts {
+  margin-top: 1rem;
+}
+
+.omni-more-charts summary {
+  cursor: pointer;
+  color: var(--dashboard-text);
+  font-weight: 700;
+}
+
+.omni-chart-grid--stacked {
+  margin-top: 1rem;
+}
+
+.omni-snapshot-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media screen and (min-width: 48em) {
+  .omni-snapshot-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.omni-snapshot-card__name,
+.omni-snapshot-card__meta {
+  display: block;
+  color: var(--dashboard-soft-text);
+}
+
+.omni-empty-state {
+  padding: 1rem;
+  border: 1px dashed var(--dashboard-border);
+  border-radius: 0.95rem;
+  color: var(--dashboard-soft-text);
+  background: rgba(148, 163, 184, 0.06);
+}
+
+.omni-history-table__wrap {
+  overflow: auto;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 1rem;
+}
+
+.omni-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1000px;
+}
+
+.omni-history-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0.8rem;
+  background: var(--dashboard-panel-bg);
+  color: var(--dashboard-text);
+  text-align: left;
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.omni-history-table tbody tr:nth-child(even) {
+  background: rgba(148, 163, 184, 0.05);
+}
+
+.omni-history-table tbody tr:hover {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.omni-history-table__cell {
+  padding: 0.72rem 0.8rem;
+  border-bottom: 1px solid var(--dashboard-border);
+  color: var(--dashboard-text);
+  vertical-align: top;
+}
+
+.omni-history-table__cell--numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .time-range-control {
   display: flex;
   flex-direction: column;

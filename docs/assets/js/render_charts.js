@@ -6,9 +6,17 @@ function isDashboardHome() {
 }
 
 function cloneOption(option) {
-  return typeof structuredClone === "function"
-    ? structuredClone(option)
-    : JSON.parse(JSON.stringify(option));
+  if (Array.isArray(option)) {
+    return option.map((item) => cloneOption(item));
+  }
+  if (option && typeof option === "object") {
+    const cloned = {};
+    Object.entries(option).forEach(([key, value]) => {
+      cloned[key] = cloneOption(value);
+    });
+    return cloned;
+  }
+  return option;
 }
 
 function chartPalette() {
@@ -430,6 +438,405 @@ async function loadHardwareStatus() {
   }
 }
 
+function isNumeric(value) {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function formatMetricValue(value, digits = 4) {
+  return isNumeric(value) ? value.toFixed(digits) : "--";
+}
+
+function formatTableValue(field, value) {
+  if (field === "model_id" || field === "tokenizer_id") {
+    return escapeHtml(String(value || "--"));
+  }
+  if (isNumeric(value)) {
+    return value.toFixed(4);
+  }
+  if (value === null || value === undefined || value === "") {
+    return "--";
+  }
+  return escapeHtml(String(value));
+}
+
+function humanizeToken(value) {
+  const mapping = {
+    ttft: "TTFT",
+    tpot: "TPOT",
+    ttfp: "TTFP",
+    itl: "ITL",
+    e2el: "E2EL",
+    rtf: "RTF",
+  };
+  return mapping[value.toLowerCase()] || `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
+}
+
+function humanizeField(field) {
+  return field
+    .split("_")
+    .map((part) => humanizeToken(part))
+    .join(" ");
+}
+
+function disposeChartsWithin(root) {
+  [...charts.entries()].forEach(([container, chart]) => {
+    if (root.contains(container)) {
+      chart.dispose();
+      charts.delete(container);
+    }
+  });
+}
+
+function setChart(container, option) {
+  if (typeof echarts === "undefined") {
+    return;
+  }
+  const chart = charts.get(container) || echarts.init(container);
+  chart.setOption(applyTheme(option), true);
+  charts.set(container, chart);
+}
+
+function buildSeriesLabel(record) {
+  return [
+    record.test_name,
+    record.dataset_name || "dataset:n/a",
+    `mc=${record.max_concurrency}`,
+    `np=${record.num_prompts}`,
+  ].join(" · ");
+}
+
+function filterRecords(records, filters) {
+  return records.filter((record) => Object.entries(filters).every(([field, value]) => {
+    if (!value) {
+      return true;
+    }
+    const raw = record[field];
+    if (raw === null || raw === undefined) {
+      return false;
+    }
+    if (typeof raw === "number") {
+      return String(raw) === value.trim();
+    }
+    return String(raw).toLowerCase().includes(value.trim().toLowerCase());
+  }));
+}
+
+function groupRecords(records, fields) {
+  const grouped = new Map();
+  records.forEach((record) => {
+    const key = fields.map((field) => record[field]).join("||");
+    if (!grouped.has(key)) {
+      grouped.set(key, []);
+    }
+    grouped.get(key).push(record);
+  });
+  return grouped;
+}
+
+function buildOmniMetricSeries(records, metric, groupFields) {
+  const grouped = groupRecords(records, groupFields);
+  const series = [];
+  grouped.forEach((items) => {
+    const points = items
+      .filter((item) => isNumeric(item[metric]))
+      .sort((left, right) => left.sort_timestamp.localeCompare(right.sort_timestamp))
+      .map((item) => ({
+        value: [item.date, item[metric]],
+        meta: {
+          test_name: item.test_name,
+          dataset_name: item.dataset_name,
+          max_concurrency: item.max_concurrency,
+          num_prompts: item.num_prompts,
+          metric,
+          source_file: item.source_file,
+        },
+      }));
+    if (points.length > 0) {
+      series.push({
+        name: `${buildSeriesLabel(items[0])} · ${humanizeField(metric)}`,
+        type: "line",
+        showSymbol: points.length < 8,
+        smooth: false,
+        data: points,
+      });
+    }
+  });
+  return series;
+}
+
+function buildOmniChartOption(metricGroup, records, groupFields) {
+  const series = metricGroup.metrics.flatMap((metric) => buildOmniMetricSeries(records, metric, groupFields));
+  return {
+    tooltip: {
+      trigger: "item",
+      formatter(params) {
+        const meta = params.data?.meta || {};
+        return [
+          `<strong>${escapeHtml(params.seriesName || "")}</strong>`,
+          escapeHtml(String(params.data?.value?.[0] || "")),
+          `Value: ${formatMetricValue(params.data?.value?.[1])}`,
+          `Test: ${escapeHtml(meta.test_name || "--")}`,
+          `Dataset: ${escapeHtml(meta.dataset_name || "--")}`,
+          `Max concurrency: ${escapeHtml(String(meta.max_concurrency ?? "--"))}`,
+          `Num prompts: ${escapeHtml(String(meta.num_prompts ?? "--"))}`,
+        ].join("<br>");
+      },
+    },
+    legend: {
+      type: "scroll",
+      top: 0,
+      textStyle: { fontSize: 11 },
+    },
+    grid: {
+      left: 56,
+      right: 24,
+      top: 60,
+      bottom: 24,
+      containLabel: true,
+    },
+    xAxis: {
+      type: "time",
+      axisLabel: { show: false },
+    },
+    yAxis: {
+      type: "value",
+      axisLabel: {
+        formatter(value) {
+          return Number(value).toFixed(2);
+        },
+      },
+    },
+    series,
+  };
+}
+
+function renderOmniFilterBar(payload, filters) {
+  const container = document.querySelector("[data-omni-history-filters]");
+  if (!container) {
+    return;
+  }
+  container.innerHTML = payload.filters.map((field) => {
+    const datalistId = `omni-filter-${field}`;
+    const options = (payload.filter_options?.[field] || [])
+      .map((option) => `<option value="${escapeHtml(String(option))}"></option>`)
+      .join("");
+    return `
+      <label class="omni-filter">
+        <span class="omni-filter__label">${escapeHtml(humanizeField(field))}</span>
+        <input
+          class="omni-filter__input"
+          type="text"
+          list="${datalistId}"
+          data-omni-filter="${field}"
+          value="${escapeHtml(filters[field] || "")}"
+          placeholder="All"
+        >
+        <datalist id="${datalistId}">${options}</datalist>
+      </label>
+    `;
+  }).join("") + `
+    <button type="button" class="omni-filter__reset" data-omni-filter-reset>Reset filters</button>
+  `;
+
+  container.querySelectorAll("[data-omni-filter]").forEach((input) => {
+    input.addEventListener("input", () => {
+      renderQwen3OmniHistory(payload);
+    });
+  });
+  container.querySelector("[data-omni-filter-reset]")?.addEventListener("click", () => {
+    container.querySelectorAll("[data-omni-filter]").forEach((input) => {
+      input.value = "";
+    });
+    renderQwen3OmniHistory(payload);
+  });
+}
+
+function currentOmniFilters(payload) {
+  const inputs = [...document.querySelectorAll("[data-omni-filter]")];
+  return payload.filters.reduce((acc, field) => {
+    const input = inputs.find((item) => item.dataset.omniFilter === field);
+    acc[field] = input?.value?.trim() || "";
+    return acc;
+  }, {});
+}
+
+function renderOmniSummary(records, groupFields) {
+  const container = document.querySelector("[data-omni-history-summary]");
+  if (!container) {
+    return;
+  }
+  const latest = records[0];
+  const configs = groupRecords(records, groupFields).size;
+  container.innerHTML = `
+    <div class="omni-summary-card">
+      <span class="omni-summary-card__eyebrow">Visible Records</span>
+      <strong class="omni-summary-card__value">${records.length}</strong>
+    </div>
+    <div class="omni-summary-card">
+      <span class="omni-summary-card__eyebrow">Visible Configs</span>
+      <strong class="omni-summary-card__value">${configs}</strong>
+    </div>
+    <div class="omni-summary-card">
+      <span class="omni-summary-card__eyebrow">Latest Result</span>
+      <strong class="omni-summary-card__value">${escapeHtml(latest?.date || "--")}</strong>
+    </div>
+  `;
+}
+
+function renderOmniTable(payload, records) {
+  const container = document.querySelector("[data-omni-history-table]");
+  if (!container) {
+    return;
+  }
+  if (records.length === 0) {
+    container.innerHTML = '<div class="omni-empty-state">当前筛选条件下没有数据。</div>';
+    return;
+  }
+
+  const header = payload.table_columns
+    .map((field) => `<th scope="col">${escapeHtml(humanizeField(field))}</th>`)
+    .join("");
+  const body = records.map((record) => {
+    const cells = payload.table_columns.map((field) => {
+      const numericClass = isNumeric(record[field]) ? " omni-history-table__cell--numeric" : "";
+      return `<td class="omni-history-table__cell${numericClass}">${formatTableValue(field, record[field])}</td>`;
+    }).join("");
+    return `<tr>${cells}</tr>`;
+  }).join("");
+
+  container.innerHTML = `
+    <div class="omni-history-table__wrap">
+      <table class="omni-history-table">
+        <thead><tr>${header}</tr></thead>
+        <tbody>${body}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderOmniSnapshot(metricGroup, records, groupFields) {
+  const seriesByMetric = metricGroup.metrics.flatMap((metric) => buildOmniMetricSeries(records, metric, groupFields));
+  const items = seriesByMetric
+    .map((series) => {
+      const point = series.data[series.data.length - 1];
+      return point ? `
+        <div class="omni-snapshot-card">
+          <span class="omni-snapshot-card__name">${escapeHtml(series.name)}</span>
+          <strong class="omni-snapshot-card__value">${formatMetricValue(point.value[1])}</strong>
+          <span class="omni-snapshot-card__meta">${escapeHtml(String(point.value[0]))}</span>
+        </div>
+      ` : "";
+    })
+    .filter(Boolean)
+    .join("");
+  return items || '<div class="omni-empty-state">当前分组没有可展示的数值。</div>';
+}
+
+function renderOmniChartSection(section, metricGroup, records, groupFields) {
+  const chartRoot = document.createElement("section");
+  chartRoot.className = "omni-chart-card";
+  const allSeries = metricGroup.metrics.flatMap((metric) => buildOmniMetricSeries(records, metric, groupFields));
+  const pointCount = allSeries.reduce((maxCount, series) => Math.max(maxCount, series.data.length), 0);
+
+  chartRoot.innerHTML = `
+    <div class="omni-chart-card__header">
+      <div>
+        <h3>${escapeHtml(metricGroup.title)}</h3>
+        <p>${metricGroup.metrics.map(humanizeField).join(" · ")}</p>
+      </div>
+      <span class="omni-chart-card__badge">${allSeries.length} series</span>
+    </div>
+  `;
+
+  if (allSeries.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "omni-empty-state";
+    empty.textContent = "当前筛选条件下没有数据。";
+    chartRoot.append(empty);
+    section.append(chartRoot);
+    return;
+  }
+
+  if (pointCount < 2) {
+    const snapshot = document.createElement("div");
+    snapshot.className = "omni-snapshot-grid";
+    snapshot.innerHTML = renderOmniSnapshot(metricGroup, records, groupFields);
+    chartRoot.append(snapshot);
+    section.append(chartRoot);
+    return;
+  }
+
+  const chart = document.createElement("div");
+  chart.className = "chart-frame omni-chart-frame";
+  chartRoot.append(chart);
+  section.append(chartRoot);
+  setChart(chart, buildOmniChartOption(metricGroup, records, groupFields));
+}
+
+function renderOmniCharts(payload, records) {
+  const container = document.querySelector("[data-omni-history-charts]");
+  if (!container) {
+    return;
+  }
+  disposeChartsWithin(container);
+  container.innerHTML = "";
+
+  const primary = document.createElement("div");
+  primary.className = "omni-chart-grid";
+  container.append(primary);
+  payload.metric_groups.slice(0, 3).forEach((metricGroup) => {
+    renderOmniChartSection(primary, metricGroup, records, payload.group_fields);
+  });
+
+  if (payload.metric_groups.length > 3) {
+    const details = document.createElement("details");
+    details.className = "omni-more-charts";
+    details.innerHTML = '<summary>More charts</summary>';
+    const extra = document.createElement("div");
+    extra.className = "omni-chart-grid omni-chart-grid--stacked";
+    details.append(extra);
+    container.append(details);
+    let extraRendered = false;
+    const renderExtraCharts = () => {
+      if (extraRendered) {
+        return;
+      }
+      payload.metric_groups.slice(3).forEach((metricGroup) => {
+        renderOmniChartSection(extra, metricGroup, records, payload.group_fields);
+      });
+      extraRendered = true;
+    };
+    details.addEventListener("toggle", () => {
+      if (details.open) {
+        renderExtraCharts();
+      }
+    });
+  }
+}
+
+function renderQwen3OmniHistory(payload) {
+  const filters = currentOmniFilters(payload);
+  renderOmniFilterBar(payload, filters);
+  const filtered = filterRecords(payload.records, filters);
+  renderOmniSummary(filtered, payload.group_fields);
+  renderOmniCharts(payload, filtered);
+  renderOmniTable(payload, filtered);
+}
+
+async function loadQwen3OmniHistory() {
+  const root = document.querySelector("[data-omni-history-src]");
+  if (!root) {
+    return;
+  }
+
+  try {
+    const payload = await fetchJson(root.dataset.omniHistorySrc);
+    renderQwen3OmniHistory(payload);
+  } catch (error) {
+    root.innerHTML = `<div class="omni-empty-state">Failed to load Qwen3 Omni history: ${escapeHtml(error.message)}</div>`;
+  }
+}
+
 function bindRangePicker() {
   const picker = document.querySelector("[data-time-range]");
   if (!picker) {
@@ -457,5 +864,5 @@ document.addEventListener("DOMContentLoaded", async () => {
   bindRangePicker();
   bindRailSpy();
   observeColorScheme();
-  await Promise.all([loadHealth(), loadHardwareStatus(), reloadCharts()]);
+  await Promise.all([loadHealth(), loadHardwareStatus(), reloadCharts(), loadQwen3OmniHistory()]);
 });

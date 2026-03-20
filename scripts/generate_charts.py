@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 from collections import Counter
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,18 @@ INDEX_PATH = DATA_DIR / "index.json"
 CONFIG_PATH = DATA_DIR / "config.json"
 ALERTS_PATH = DATA_DIR / "alerts.json"
 CHARTS_DIR = ROOT / "docs" / "assets" / "charts"
+QWEN3_OMNI_HISTORY_PATH = CHARTS_DIR / "qwen3_omni_history.json"
+QWEN3_OMNI_DATASETS = {"random", "random-mm"}
+QWEN3_OMNI_GROUP_FIELDS = (
+    "endpoint_type",
+    "backend",
+    "model_id",
+    "tokenizer_id",
+    "test_name",
+    "dataset_name",
+    "max_concurrency",
+    "num_prompts",
+)
 MODEL_METRICS = {
     "Qwen3-Omni": [
         ("ttft_ms", None, None),
@@ -46,6 +59,7 @@ MODEL_METRICS = {
 }
 RANGE_WINDOWS = {"1d": 1, "7d": 7, "30d": 30}
 
+
 def save_chart(name: str, option: dict[str, Any]) -> None:
     save_json(CHARTS_DIR / f"{name}.json", option)
 
@@ -74,6 +88,130 @@ def build_line_chart(
 
 def chart_slug(value: str) -> str:
     return value.lower().replace(".", "").replace(" ", "_").replace("-", "_")
+
+
+def parse_qwen3_omni_filename(path: Path) -> dict[str, Any] | None:
+    stem = path.stem
+    prefix = "result_test_"
+    if not stem.startswith(prefix):
+        return None
+    parts = stem[len(prefix):].split("_")
+    if len(parts) < 5:
+        return None
+    timestamp = parts[-1]
+    try:
+        parsed_ts = datetime.strptime(timestamp, "%Y%m%d-%H%M%S")
+        num_prompts = int(parts[-2])
+        max_concurrency = int(parts[-3])
+    except ValueError:
+        return None
+
+    dataset_name = parts[-4]
+    test_name = "_".join(parts[:-4])
+    if not test_name:
+        return None
+    if dataset_name not in QWEN3_OMNI_DATASETS:
+        dataset_name = ""
+
+    return {
+        "test_name": test_name,
+        "dataset_name": dataset_name,
+        "max_concurrency": max_concurrency,
+        "num_prompts": num_prompts,
+        "timestamp_key": timestamp,
+        "sort_timestamp": parsed_ts.isoformat(),
+        "date": parsed_ts.strftime("%Y-%m-%d %H:%M:%S"),
+    }
+
+
+def load_qwen3_omni_history(source_dir: Path) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for path in sorted(source_dir.glob("result_test_*.json")):
+        parsed = parse_qwen3_omni_filename(path)
+        if parsed is None:
+            continue
+        payload = load_json(path, {})
+        if not isinstance(payload, dict):
+            continue
+        merged = {**payload, **parsed}
+        record = {
+            "source_file": path.name,
+            "config_key": " | ".join(str(merged.get(field, "")) for field in QWEN3_OMNI_GROUP_FIELDS),
+            **payload,
+            **parsed,
+        }
+        record["test_name"] = parsed["test_name"]
+        record["dataset_name"] = parsed["dataset_name"]
+        record["max_concurrency"] = parsed["max_concurrency"]
+        record["num_prompts"] = parsed["num_prompts"]
+        record["date"] = parsed["date"]
+        record["sort_timestamp"] = parsed["sort_timestamp"]
+        records.append(record)
+
+    records.sort(
+        key=lambda item: (
+            tuple(item.get(field) for field in QWEN3_OMNI_GROUP_FIELDS),
+            item["sort_timestamp"],
+        ),
+        reverse=False,
+    )
+    grouped: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
+    for record in records:
+        key = tuple(record.get(field) for field in QWEN3_OMNI_GROUP_FIELDS)
+        grouped.setdefault(key, []).append(record)
+
+    ordered_records: list[dict[str, Any]] = []
+    for key in sorted(grouped):
+        items = sorted(grouped[key], key=lambda item: item["sort_timestamp"], reverse=True)
+        ordered_records.extend(items)
+    return ordered_records
+
+
+def build_qwen3_omni_history_payload(config: dict[str, Any], source_dir: Path) -> dict[str, Any]:
+    page_config = config.get("kanban_pages", {}).get("qwen3_omni_history", {})
+    records = load_qwen3_omni_history(source_dir)
+    groups: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
+    for record in records:
+        key = tuple(record.get(field) for field in QWEN3_OMNI_GROUP_FIELDS)
+        groups.setdefault(key, []).append(record)
+
+    grouped_payload = []
+    for key in sorted(groups):
+        items = sorted(groups[key], key=lambda item: item["sort_timestamp"], reverse=True)
+        grouped_payload.append(
+            {
+                "key": dict(zip(QWEN3_OMNI_GROUP_FIELDS, key)),
+                "config_key": items[0]["config_key"],
+                "record_count": len(items),
+                "records": items,
+            }
+        )
+
+    filter_fields = page_config.get("filters", [])
+    filter_options = {
+        field: sorted({item[field] for item in records if item.get(field) not in (None, "")}, key=lambda value: str(value))
+        for field in filter_fields
+    }
+
+    try:
+        source_dir_display = str(source_dir.relative_to(ROOT))
+    except ValueError:
+        source_dir_display = str(source_dir)
+
+    return {
+        "title": config.get("models", {}).get("Qwen3-Omni", {}).get("display_name", "Qwen3 Omni"),
+        "source_dir": source_dir_display,
+        "generated_at": datetime.now().isoformat(),
+        "filters": filter_fields,
+        "filter_options": filter_options,
+        "table_columns": page_config.get("table_columns", []),
+        "metric_groups": page_config.get("metric_groups", []),
+        "group_fields": list(QWEN3_OMNI_GROUP_FIELDS),
+        "record_count": len(records),
+        "group_count": len(grouped_payload),
+        "records": records,
+        "groups": grouped_payload,
+    }
 
 
 def build_multi_series_chart(
@@ -211,6 +349,8 @@ def main() -> int:
     save_chart("pass_rate_heatmap", build_heatmap(config, latest_results))
     save_chart("summary", build_summary(index, latest_results, alerts))
     save_chart("hardware_status", build_hardware_status(config, latest_results))
+    qwen3_omni_source_dir = RESULTS_DIR / config.get("kanban_pages", {}).get("qwen3_omni_history", {}).get("source_dir", "qwen3omni")
+    save_json(QWEN3_OMNI_HISTORY_PATH, build_qwen3_omni_history_payload(config, qwen3_omni_source_dir))
     for model, model_config in config.get("models", {}).items():
         available_metrics = set(model_config["metrics"]["required"]) | set(model_config["metrics"]["optional"])
         for metric, y_min, y_max in MODEL_METRICS.get(model, []):

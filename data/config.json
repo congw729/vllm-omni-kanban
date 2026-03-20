@@ -57,6 +57,107 @@
       }
     }
   },
+  "kanban_pages": {
+    "qwen3_omni_history": {
+      "source_dir": "qwen3omni",
+      "filters": [
+        "model_id",
+        "test_name",
+        "dataset_name",
+        "endpoint_type",
+        "backend",
+        "tokenizer_id",
+        "max_concurrency",
+        "num_prompts"
+      ],
+      "table_columns": [
+        "date",
+        "test_name",
+        "dataset_name",
+        "max_concurrency",
+        "num_prompts",
+        "endpoint_type",
+        "backend",
+        "model_id",
+        "request_throughput",
+        "output_throughput",
+        "total_token_throughput",
+        "mean_ttft_ms",
+        "p99_ttft_ms",
+        "mean_e2el_ms",
+        "mean_audio_rtf",
+        "mean_audio_ttfp_ms",
+        "mean_audio_duration_s"
+      ],
+      "metric_groups": [
+        {
+          "id": "throughput",
+          "title": "Throughput",
+          "metrics": [
+            "output_throughput",
+            "total_token_throughput"
+          ]
+        },
+        {
+          "id": "ttft",
+          "title": "TTFT",
+          "metrics": [
+            "mean_ttft_ms",
+            "median_ttft_ms",
+            "p99_ttft_ms"
+          ]
+        },
+        {
+          "id": "tpot_itl",
+          "title": "TPOT + ITL",
+          "metrics": [
+            "mean_tpot_ms",
+            "median_tpot_ms",
+            "p99_tpot_ms",
+            "mean_itl_ms",
+            "median_itl_ms",
+            "p99_itl_ms"
+          ]
+        },
+        {
+          "id": "e2el",
+          "title": "E2EL",
+          "metrics": [
+            "mean_e2el_ms",
+            "median_e2el_ms",
+            "p99_e2el_ms"
+          ]
+        },
+        {
+          "id": "audio_rtf",
+          "title": "Audio RTF",
+          "metrics": [
+            "mean_audio_rtf",
+            "median_audio_rtf",
+            "p99_audio_rtf"
+          ]
+        },
+        {
+          "id": "audio_ttfp",
+          "title": "Audio TTFP",
+          "metrics": [
+            "mean_audio_ttfp_ms",
+            "median_audio_ttfp_ms",
+            "p99_audio_ttfp_ms"
+          ]
+        },
+        {
+          "id": "audio_duration",
+          "title": "Audio Duration",
+          "metrics": [
+            "mean_audio_duration_s",
+            "median_audio_duration_s",
+            "p99_audio_duration_s"
+          ]
+        }
+      ]
+    }
+  },
   "thresholds": {
     "pass_rate_warning": 0.9,
     "pass_rate_critical": 0.8,
