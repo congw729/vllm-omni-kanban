@@ -321,6 +321,8 @@ body.dashboard-home .technical-rail__sublink--active {
 .omni-history-page {
   display: grid;
   gap: 1.25rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .omni-section {
@@ -329,6 +331,9 @@ body.dashboard-home .technical-rail__sublink--active {
   border-radius: 1.2rem;
   background: var(--dashboard-panel-bg);
   box-shadow: var(--dashboard-shadow);
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .omni-section__header {
@@ -350,17 +355,15 @@ body.dashboard-home .technical-rail__sublink--active {
 .omni-filter-bar {
   display: grid;
   gap: 0.85rem;
-}
-
-@media screen and (min-width: 60em) {
-  .omni-filter-bar {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
+  min-width: 0;
+  /* Fit columns to real content width (nav + article + TOC); avoid forced 4-col overflow */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11.25rem), 1fr));
 }
 
 .omni-filter {
   display: grid;
   gap: 0.38rem;
+  min-width: 0;
 }
 
 .omni-filter__label,
@@ -380,6 +383,10 @@ body.dashboard-home .technical-rail__sublink--active {
   border-radius: 0.9rem;
   background: var(--dashboard-panel-strong);
   color: var(--dashboard-text);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .omni-filter__input:focus {
