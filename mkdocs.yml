@@ -18,6 +18,8 @@ theme:
         name: Switch to light mode
 plugins:
   - search
+markdown_extensions:
+  - md_in_html
 nav:
   - Home: index.md
   - Models:
