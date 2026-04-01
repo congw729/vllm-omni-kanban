@@ -4,7 +4,7 @@ import os
 import smtplib
 import sys
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from pathlib import Path
 from typing import Any
@@ -187,9 +187,22 @@ def send_email(message: str) -> None:
         smtp.send_message(email)
 
 
+def _datetime_utc(dt: datetime) -> datetime:
+    """Normalize to UTC for comparisons (naive times are treated as UTC)."""
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
 def within_cooldown(existing: dict[str, Any], now: datetime) -> bool:
     suppressed_until = existing.get("suppressed_until")
-    return bool(suppressed_until and datetime.fromisoformat(suppressed_until) > now and not existing.get("resolved"))
+    if not suppressed_until or existing.get("resolved"):
+        return False
+    try:
+        until = datetime.fromisoformat(suppressed_until)
+    except (ValueError, TypeError):
+        return False
+    return _datetime_utc(until) > _datetime_utc(now)
 
 
 def resolve_cleared_alerts(alerts_by_id: dict[str, dict[str, Any]], active_ids: set[str], latest_timestamp: str) -> None:
@@ -218,10 +231,11 @@ def check_data_freshness(index: dict[str, Any], freshness_threshold_hours: int =
     except (ValueError, TypeError) as e:
         logger.error(f"Invalid timestamp format: {last_update_str}, error: {e}")
         return None
-    
-    now = datetime.utcnow()
-    age_hours = (now - last_updated).total_seconds() / 3600
-    
+
+    now = datetime.now(timezone.utc)
+    last_updated_utc = _datetime_utc(last_updated)
+    age_hours = (now - last_updated_utc).total_seconds() / 3600
+
     if age_hours > freshness_threshold_hours:
         logger.warning(f"Data stale: last update was {age_hours:.1f} hours ago (threshold: {freshness_threshold_hours}h)")
         return {
@@ -261,7 +275,7 @@ def main() -> int:
     latest_results = load_json(RESULTS_DIR / f"{latest_date}.json", {"results": []}).get("results", [])
     history = load_json(ALERTS_PATH, {"alerts": []})
     alerts_by_id = {item["id"]: item for item in history.get("alerts", [])}
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     baseline = compute_baseline(index, latest_date)
     active_ids: set[str] = set()
 

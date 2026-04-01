@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Download nightly perf JSON artifacts from a Buildkite build (build-level listing).
+"""Download nightly perf-related artifacts from a Buildkite build (build-level listing).
 
-Keeps only:
-  - basename matching result_test_*.json
-  - basename matching benchmark_results_*.json
+Keeps only basenames aligned with test-nightly perf uploads:
+  - result_test_*.json, result_test_*.html
+  - benchmark_results_*.json, benchmark_results_*.html
 
 Uses BUILDKITE_TOKEN or BUILDKITE_API_TOKEN (read_builds + read_artifacts scopes).
 
 Default org / pipeline: vllm / vllm-omni (override with flags or BUILDKITE_ORG / BUILDKITE_PIPELINE*).
 If --build is omitted, resolves the newest build on --branch whose message contains
 --nightly-message-contains (default matches UI label "Scheduled nightly build").
-By default --latest-build-state is any (passed and failed); failed runs may still have perf JSON.
+By default --latest-build-state is any (passed and failed); failed runs may still have uploaded files.
 When --build is omitted (auto-resolve), prints the newest 5 matching branch builds on stderr
 before download. With explicit --build, listing is off by default; pass --list-matching-builds N
 to show the newest N matching builds for context (or 0 to disable auto-resolve listing).
@@ -312,18 +312,20 @@ def _download_file(download_url: str, dest: str, token: str) -> None:
                 f.write(chunk)
 
 
-def is_perf_artifact_filename(filename: str) -> bool:
-    """Return True if basename should be downloaded as nightly perf JSON."""
+def is_nightly_sync_artifact_basename(filename: str) -> bool:
+    """Return True if basename should be downloaded (nightly perf JSON/HTML, same stem rules)."""
     name = PurePosixPath(filename).name
-    if not name.endswith(".json"):
-        return False
-    return name.startswith("result_test_") or name.startswith("benchmark_results_")
+    if name.endswith(".json"):
+        return name.startswith("result_test_") or name.startswith("benchmark_results_")
+    if name.endswith(".html"):
+        return name.startswith("result_test_") or name.startswith("benchmark_results_")
+    return False
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Download Buildkite perf JSON artifacts for one build. "
-        "Omit --build to auto-pick the latest main nightly (see --branch / --nightly-message-contains).",
+        description="Download Buildkite nightly perf files (result_test_* / benchmark_results_*; .json and .html) "
+        "for one build. Omit --build to auto-pick the latest main nightly (see --branch / --nightly-message-contains).",
     )
     env_org = os.environ.get("BUILDKITE_ORG", "").strip()
     env_pipe = os.environ.get("BUILDKITE_PIPELINE", os.environ.get("BUILDKITE_PIPELINE_SLUG", "")).strip()
@@ -373,7 +375,7 @@ def main() -> None:
             "Any N>0 forces listing even with explicit --build."
         ),
     )
-    parser.add_argument("--output-dir", default="buildkite-perf-json", help="Output directory root")
+    parser.add_argument("--output-dir", default="buildkite-nightly-files", help="Output directory root")
     parser.add_argument(
         "--state",
         default="finished",
@@ -469,7 +471,7 @@ def main() -> None:
             continue
         filename = rec.get("filename") or PurePosixPath(str(path)).name
         filename = str(filename)
-        if not is_perf_artifact_filename(filename):
+        if not is_nightly_sync_artifact_basename(filename):
             continue
         try:
             rel = _safe_relative_artifact_path(str(path))
@@ -487,7 +489,8 @@ def main() -> None:
 
     if n_ok == 0:
         sys.stderr.write(
-            "No perf JSON available to download: nothing matched result_test_*.json or benchmark_results_*.json "
+            "No nightly sync files to download: nothing matched result_test_* / benchmark_results_* "
+            "with suffix .json or .html "
             f"for build {build_no} (after artifact --state filter).\n"
             "Failed or partial runs sometimes upload only some steps' files; if perf steps did upload, "
             "they may use other filenames or artifact rows may not be in the default finished state.\n",

@@ -1,15 +1,15 @@
-"""Tests for perf artifact filename filter (no network)."""
+"""Tests for nightly sync artifact basename filter (no network)."""
 
 from pathlib import PurePosixPath
 
 import pytest
 
-from scripts.fetch_buildkite_perf_json import (
+from scripts.fetch_buildkite_nightly_files import (
     _append_matching_builds_until_cap,
     append_resolved_build_github_output,
     build_matches_latest_nightly_criteria,
     first_matching_build_number,
-    is_perf_artifact_filename,
+    is_nightly_sync_artifact_basename,
 )
 
 
@@ -18,15 +18,19 @@ from scripts.fetch_buildkite_perf_json import (
     [
         ("result_test_qwen3_omni_random_1_10_20260308-182108.json", True),
         ("tests/dfx/perf/results/result_test_foo.json", True),
+        ("result_test_qwen3_omni_random_1_10_20260308-182108.html", True),
         ("benchmark_results_test_qwen_image_vllm_omni_20260311-053632.json", True),
+        ("benchmark_results_test_stem_20260311.html", True),
         ("buildkite_testcase_statistics.html", False),
         ("summary_gebench.json", False),
         ("result_test_foo.txt", False),
         ("prefix_benchmark_results_x.json", False),
+        ("random_report.html", False),
+        ("result_test_x.htm", False),
     ],
 )
-def test_is_perf_artifact_filename(name: str, expect: bool) -> None:
-    assert is_perf_artifact_filename(PurePosixPath(name).name) is expect
+def test_is_nightly_sync_artifact_basename(name: str, expect: bool) -> None:
+    assert is_nightly_sync_artifact_basename(PurePosixPath(name).name) is expect
 
 
 def test_build_matches_latest_nightly_criteria() -> None:

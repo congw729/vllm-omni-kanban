@@ -1,10 +1,10 @@
-# Sync raw perf JSON from Buildkite Artifacts into the repo: schedule, repository_dispatch, or workflow_dispatch (no JSON transform).
-name: Sync Buildkite nightly perf JSON
+# Sync nightly perf-related files from Buildkite (JSON/HTML): schedule, repository_dispatch, or workflow_dispatch.
+name: Sync Buildkite nightly files
 
 on:
   schedule:
     # UTC — set after vllm-omni scheduled nightly usually finishes and artifacts exist (tune per pipeline).
-    - cron: "0 14 * * *"
+    - cron: "0 20 * * *"
   repository_dispatch:
     types: [buildkite_nightly_perf]
   workflow_dispatch:
@@ -26,7 +26,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: sync-buildkite-nightly-perf-${{ github.repository }}
+  group: sync-buildkite-nightly-files-${{ github.repository }}
   cancel-in-progress: false
 
 jobs:
@@ -72,8 +72,8 @@ jobs:
           BK_ORG: ${{ secrets.BUILDKITE_ORG }}
           BK_PIPE: ${{ secrets.BUILDKITE_PIPELINE_SLUG }}
 
-      - name: Fetch perf JSON from Buildkite
-        id: fetch_perf
+      - name: Fetch nightly files from Buildkite
+        id: fetch_nightly
         env:
           BUILDKITE_API_TOKEN: ${{ secrets.BUILDKITE_API_TOKEN }}
           BUILDKITE_ORG: ${{ steps.coords.outputs.org }}
@@ -82,15 +82,15 @@ jobs:
           set -euo pipefail
           ORG="${{ steps.coords.outputs.org }}"
           PIPE="${{ steps.coords.outputs.pipeline }}"
-          OUT="${{ runner.temp }}/perf_json"
+          OUT="${{ runner.temp }}/bk_nightly_files"
           if [ "${{ steps.coords.outputs.auto_resolve }}" = "true" ]; then
-            python scripts/fetch_buildkite_perf_json.py \
+            python scripts/fetch_buildkite_nightly_files.py \
               --org "$ORG" \
               --pipeline "$PIPE" \
               --output-dir "$OUT" \
               --write-resolved-to-github-output
           else
-            python scripts/fetch_buildkite_perf_json.py \
+            python scripts/fetch_buildkite_nightly_files.py \
               --org "$ORG" \
               --pipeline "$PIPE" \
               --build "${{ steps.coords.outputs.build_number }}" \
@@ -98,20 +98,20 @@ jobs:
               --write-resolved-to-github-output
           fi
 
-      - name: Copy raw JSON into data/buildkite_nightly_raw
+      - name: Copy fetched files into data/buildkite_nightly_raw
         env:
-          RES_BN: ${{ steps.fetch_perf.outputs.resolved_build_number }}
+          RES_BN: ${{ steps.fetch_nightly.outputs.resolved_build_number }}
           COORDS_BN: ${{ steps.coords.outputs.build_number }}
         run: |
           set -euo pipefail
           BN="${RES_BN:-$COORDS_BN}"
           DEST="data/buildkite_nightly_raw/${BN}"
           mkdir -p "$DEST"
-          cp -a "${{ runner.temp }}/perf_json/." "$DEST/"
+          cp -a "${{ runner.temp }}/bk_nightly_files/." "$DEST/"
 
       - name: Commit and push
         env:
-          RES_BN: ${{ steps.fetch_perf.outputs.resolved_build_number }}
+          RES_BN: ${{ steps.fetch_nightly.outputs.resolved_build_number }}
           COORDS_BN: ${{ steps.coords.outputs.build_number }}
         run: |
           set -euo pipefail
@@ -122,7 +122,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "No data changes."
           else
-            git commit -m "chore(data): sync nightly perf JSON build ${BN}"
+            git commit -m "chore(data): sync nightly Buildkite files build ${BN}"
             git push
           fi
 
