@@ -44,10 +44,7 @@ def token_from_env() -> str:
     sys.stderr.write(
         "Missing token: set BUILDKITE_TOKEN or BUILDKITE_API_TOKEN.\n",
     )
-    sys.exit(2)
-    return ""
-
-
+    raise SystemExit(2)
 def _request_json(url: str, token: str):
     req = urllib.request.Request(
         url,
