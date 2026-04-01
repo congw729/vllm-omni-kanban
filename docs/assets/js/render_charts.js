@@ -785,11 +785,11 @@ function renderOmniCharts(payload, records) {
   const primary = document.createElement("div");
   primary.className = "omni-chart-grid";
   container.append(primary);
-  payload.metric_groups.slice(0, 3).forEach((metricGroup) => {
+  payload.metric_groups.slice(0, 5).forEach((metricGroup) => {
     renderOmniChartSection(primary, metricGroup, records, payload.group_fields);
   });
 
-  if (payload.metric_groups.length > 3) {
+  if (payload.metric_groups.length > 5) {
     const details = document.createElement("details");
     details.className = "omni-more-charts";
     details.innerHTML = '<summary>More charts</summary>';

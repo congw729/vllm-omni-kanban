@@ -1,7 +1,7 @@
 {
   "title": "Qwen3 Omni",
   "source_dir": "data/results/qwen3omni",
-  "generated_at": "2026-04-01T10:47:43.915321",
+  "generated_at": "2026-04-01T16:09:00.686387",
   "filters": [
     "model_id",
     "test_name",
