@@ -28,12 +28,16 @@ import urllib.parse
 import urllib.request
 from pathlib import PurePosixPath
 
+from retry_utils import with_retry
+
 API_ROOT = "https://api.buildkite.com/v2"
 DEFAULT_ORG = "vllm"
 DEFAULT_PIPELINE = "vllm-omni"
 DEFAULT_NIGHTLY_MESSAGE_SUBSTRING = "Scheduled nightly build"
 LIST_BUILDS_PAGE_SIZE = 100
 RECENT_MATCHING_BUILDS_MAX = 5
+ALLOWED_BASENAME_PREFIXES = ("result_test_", "benchmark_results_")
+ALLOWED_BASENAME_SUFFIXES = (".json", ".html")
 
 
 def token_from_env() -> str:
@@ -45,6 +49,9 @@ def token_from_env() -> str:
         "Missing token: set BUILDKITE_TOKEN or BUILDKITE_API_TOKEN.\n",
     )
     raise SystemExit(2)
+
+
+@with_retry
 def _request_json(url: str, token: str):
     req = urllib.request.Request(
         url,
@@ -136,7 +143,8 @@ def collect_matching_nightly_builds(
         url = _builds_list_url(org, pipeline, branch=branch, page=page)
         data = _request_json(url, token)
         if not isinstance(data, list):
-            sys.stderr.write(f"Unexpected response (expected JSON array): {url}\n")
+            sys.stderr.write(
+                f"Unexpected response (expected JSON array): {url}\n")
             sys.exit(1)
         if not data:
             break
@@ -177,7 +185,8 @@ def write_recent_matching_builds_banner(
         one_line = " ".join(msg.split())
         if len(one_line) > 120:
             one_line = one_line[:117] + "..."
-        mark = " <- fetching artifacts" if fetch_build and str(num) == str(fetch_build) else ""
+        mark = " <- fetching artifacts" if fetch_build and str(
+            num) == str(fetch_build) else ""
         print(f"  {i}. #{num}  state={st}  {one_line}{mark}", file=sys.stderr)
 
 
@@ -259,7 +268,8 @@ def fetch_all_artifact_records(org: str, pipeline: str, build: str, token: str) 
         url = f"{base_url}?page={page}"
         data = _request_json(url, token)
         if not isinstance(data, list):
-            sys.stderr.write(f"Unexpected response (expected JSON array): {url}\n")
+            sys.stderr.write(
+                f"Unexpected response (expected JSON array): {url}\n")
             sys.exit(1)
         if not data:
             break
@@ -282,7 +292,8 @@ def _safe_relative_artifact_path(path: str) -> PurePosixPath:
 
 class StripAuthOnRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
-        new_req = urllib.request.HTTPRedirectHandler.redirect_request(self, req, fp, code, msg, headers, newurl)
+        new_req = urllib.request.HTTPRedirectHandler.redirect_request(
+            self, req, fp, code, msg, headers, newurl)
         if new_req is None:
             return None
         old_host = urllib.parse.urlparse(req.full_url).netloc
@@ -292,6 +303,7 @@ class StripAuthOnRedirect(urllib.request.HTTPRedirectHandler):
         return new_req
 
 
+@with_retry
 def _download_file(download_url: str, dest: str, token: str) -> None:
     req = urllib.request.Request(
         download_url,
@@ -312,11 +324,7 @@ def _download_file(download_url: str, dest: str, token: str) -> None:
 def is_nightly_sync_artifact_basename(filename: str) -> bool:
     """Return True if basename should be downloaded (nightly perf JSON/HTML, same stem rules)."""
     name = PurePosixPath(filename).name
-    if name.endswith(".json"):
-        return name.startswith("result_test_") or name.startswith("benchmark_results_")
-    if name.endswith(".html"):
-        return name.startswith("result_test_") or name.startswith("benchmark_results_")
-    return False
+    return name.startswith(ALLOWED_BASENAME_PREFIXES) and name.endswith(ALLOWED_BASENAME_SUFFIXES)
 
 
 def main() -> None:
@@ -325,7 +333,8 @@ def main() -> None:
         "for one build. Omit --build to auto-pick the latest main nightly (see --branch / --nightly-message-contains).",
     )
     env_org = os.environ.get("BUILDKITE_ORG", "").strip()
-    env_pipe = os.environ.get("BUILDKITE_PIPELINE", os.environ.get("BUILDKITE_PIPELINE_SLUG", "")).strip()
+    env_pipe = os.environ.get("BUILDKITE_PIPELINE", os.environ.get(
+        "BUILDKITE_PIPELINE_SLUG", "")).strip()
     parser.add_argument(
         "--org",
         default=env_org or DEFAULT_ORG,
@@ -372,13 +381,15 @@ def main() -> None:
             "Any N>0 forces listing even with explicit --build."
         ),
     )
-    parser.add_argument("--output-dir", default="buildkite-nightly-files", help="Output directory root")
+    parser.add_argument(
+        "--output-dir", default="buildkite-nightly-files", help="Output directory root")
     parser.add_argument(
         "--state",
         default="finished",
         help="Only artifacts in this state (default: finished); use empty string for any",
     )
-    parser.add_argument("--dry-run", action="store_true", help="List only, no download")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="List only, no download")
     parser.add_argument(
         "--write-resolved-to-github-output",
         action="store_true",
@@ -396,7 +407,8 @@ def main() -> None:
     output_dir = os.path.abspath(args.output_dir)
 
     req_raw = (args.latest_build_state or "").strip().lower()
-    require_state: str | None = None if req_raw in ("", "any") else args.latest_build_state.strip()
+    require_state: str | None = None if req_raw in (
+        "", "any") else args.latest_build_state.strip()
     branch_clean = args.branch.strip()
 
     build_no = (args.build or "").strip()
@@ -422,7 +434,11 @@ def main() -> None:
                     "Try an explicit --build <number>, or adjust --branch / --nightly-message-contains / --latest-build-state.\n",
                 )
                 sys.exit(2)
-            build_no = str(recent[0].get("number")) if recent[0].get("number") is not None else ""
+            build_no = first_matching_build_number(
+                recent,
+                message_contains=args.nightly_message_contains,
+                require_state=require_state,
+            ) or ""
             if not build_no:
                 sys.stderr.write("Resolved build list missing build number.\n")
                 sys.exit(2)
@@ -458,6 +474,7 @@ def main() -> None:
 
     state_filter = (args.state or "").strip().lower()
     n_ok = 0
+    overwritten_count = 0
     for rec in records:
         st = str(rec.get("state", "")).lower()
         if state_filter and st != state_filter:
@@ -480,9 +497,14 @@ def main() -> None:
             print(f"would download: {path} -> {dest}")
             n_ok += 1
             continue
+        if os.path.exists(dest):
+            print(f"overwriting existing file: {dest}")
+            overwritten_count += 1
         print(f"downloading: {path} -> {dest}")
         _download_file(str(download_url), dest, token)
         n_ok += 1
+    print(
+        f"downloaded file count: {n_ok}; overwritten existing: {overwritten_count}")
 
     if n_ok == 0:
         sys.stderr.write(
@@ -503,7 +525,8 @@ def main() -> None:
 
     if args.write_resolved_to_github_output:
         meta_c, meta_u = fetch_build_metadata(org, pipeline, build_no, token)
-        append_resolved_build_github_output(build_no=build_no, commit=meta_c, web_url=meta_u)
+        append_resolved_build_github_output(
+            build_no=build_no, commit=meta_c, web_url=meta_u)
 
 
 if __name__ == "__main__":

@@ -8,7 +8,6 @@ from functools import wraps
 from typing import Any, Callable
 
 from tenacity import (
-    RetryError,
     Retrying,
     stop_after_attempt,
     wait_exponential,
@@ -48,15 +47,17 @@ def should_retry(exception: Exception) -> bool:
     Returns:
         True if the operation should be retried, False otherwise
     """
-    # Some callers raise exceptions with .response / .status_code (e.g. requests.HTTPError). Decide from
-    # status only: retry 429 and 5xx, not other HTTP failures—even if the class is nested under OSError.
+    # requests-style exception path
     response = getattr(exception, "response", None)
     if response is not None:
         status_code = getattr(response, "status_code", None)
         if status_code is not None:
-            if status_code in (429, 500, 502, 503, 504):
-                return True
-            return False
+            return status_code in (429, 500, 502, 503, 504)
+
+    # urllib.error.HTTPError path (.code exists)
+    status_code = getattr(exception, "code", None)
+    if isinstance(status_code, int):
+        return status_code in (429, 500, 502, 503, 504)
 
     if isinstance(exception, RETRYABLE_EXCEPTIONS):
         return True
