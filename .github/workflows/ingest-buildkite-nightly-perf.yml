@@ -10,9 +10,10 @@ on:
   workflow_dispatch:
     inputs:
       build_number:
-        description: Buildkite build number (UI)
-        required: true
+        description: Buildkite build number (optional — leave empty to auto-resolve like schedule)
+        required: false
         type: string
+        default: ""
       org_slug:
         description: Buildkite organization slug
         required: false
@@ -62,11 +63,14 @@ jobs:
             echo "Set BUILDKITE_ORG / BUILDKITE_PIPELINE_SLUG secrets or pass via dispatch payload."
             exit 1
           fi
-          if [ "$EVENT" = "schedule" ]; then
+          if [ "$EVENT" = "schedule" ] || { [ "$EVENT" = "workflow_dispatch" ] && [ -z "$BN" ]; }; then
             echo "auto_resolve=true" >> "$GITHUB_OUTPUT"
           else
             echo "auto_resolve=false" >> "$GITHUB_OUTPUT"
-            if [ -z "$BN" ]; then echo "Missing build number"; exit 1; fi
+            if [ -z "$BN" ]; then
+              echo "Missing build number (set workflow input or dispatch client_payload.build_number)."
+              exit 1
+            fi
           fi
         env:
           BK_ORG: ${{ secrets.BUILDKITE_ORG }}

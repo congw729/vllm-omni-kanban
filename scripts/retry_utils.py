@@ -48,7 +48,8 @@ def should_retry(exception: Exception) -> bool:
     Returns:
         True if the operation should be retried, False otherwise
     """
-    # HTTP errors: requests' HTTPError subclasses OSError via RequestException — classify by status first.
+    # Some callers raise exceptions with .response / .status_code (e.g. requests.HTTPError). Decide from
+    # status only: retry 429 and 5xx, not other HTTP failures—even if the class is nested under OSError.
     response = getattr(exception, "response", None)
     if response is not None:
         status_code = getattr(response, "status_code", None)
