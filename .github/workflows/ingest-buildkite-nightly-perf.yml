@@ -1,5 +1,5 @@
-# Ingest perf JSON from Buildkite: schedule (default path, no vllm-omni dispatch), repository_dispatch, or workflow_dispatch.
-name: Ingest Buildkite nightly perf
+# Sync raw perf JSON from Buildkite Artifacts into the repo: schedule, repository_dispatch, or workflow_dispatch (no JSON transform).
+name: Sync Buildkite nightly perf JSON
 
 on:
   schedule:
@@ -26,11 +26,11 @@ permissions:
   contents: write
 
 concurrency:
-  group: ingest-nightly-perf-${{ github.repository }}
+  group: sync-buildkite-nightly-perf-${{ github.repository }}
   cancel-in-progress: false
 
 jobs:
-  ingest:
+  sync_raw:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -98,24 +98,16 @@ jobs:
               --write-resolved-to-github-output
           fi
 
-      - name: Ingest into data/results
+      - name: Copy raw JSON into data/buildkite_nightly_raw
         env:
           RES_BN: ${{ steps.fetch_perf.outputs.resolved_build_number }}
-          RES_COMMIT: ${{ steps.fetch_perf.outputs.resolved_commit }}
-          RES_URL: ${{ steps.fetch_perf.outputs.resolved_build_url }}
           COORDS_BN: ${{ steps.coords.outputs.build_number }}
-          COORDS_COMMIT: ${{ steps.coords.outputs.commit }}
-          COORDS_URL: ${{ steps.coords.outputs.build_url }}
         run: |
           set -euo pipefail
           BN="${RES_BN:-$COORDS_BN}"
-          COMMIT="${RES_COMMIT:-$COORDS_COMMIT}"
-          BURL="${RES_URL:-$COORDS_URL}"
-          python scripts/ingest_nightly_perf_json.py \
-            --input-dir "${{ runner.temp }}/perf_json" \
-            --commit "$COMMIT" \
-            --build-url "$BURL" \
-            --build-number "$BN"
+          DEST="data/buildkite_nightly_raw/${BN}"
+          mkdir -p "$DEST"
+          cp -a "${{ runner.temp }}/perf_json/." "$DEST/"
 
       - name: Commit and push
         env:
@@ -126,11 +118,11 @@ jobs:
           BN="${RES_BN:-$COORDS_BN}"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          git add data/results/
+          git add data/buildkite_nightly_raw/
           if git diff --staged --quiet; then
             echo "No data changes."
           else
-            git commit -m "chore(data): ingest nightly perf build ${BN}"
+            git commit -m "chore(data): sync nightly perf JSON build ${BN}"
             git push
           fi
 

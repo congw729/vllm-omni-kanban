@@ -212,7 +212,7 @@ def _artifact_list_url(org: str, pipeline: str, build: str) -> str:
 
 
 def fetch_build_metadata(org: str, pipeline: str, build_no: str, token: str) -> tuple[str, str]:
-    """Best-effort (commit_sha, web_url) for GitHub Actions ingest metadata."""
+    """Best-effort (commit_sha, web_url) for GitHub Actions commit metadata."""
     url = _build_show_url(org, pipeline, build_no)
     try:
         data = _request_json(url, token)
@@ -313,7 +313,7 @@ def _download_file(download_url: str, dest: str, token: str) -> None:
 
 
 def is_perf_artifact_filename(filename: str) -> bool:
-    """Return True if basename should be ingested as nightly perf JSON."""
+    """Return True if basename should be downloaded as nightly perf JSON."""
     name = PurePosixPath(filename).name
     if not name.endswith(".json"):
         return False
