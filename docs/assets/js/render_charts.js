@@ -517,7 +517,8 @@ function filterRecords(records, filters) {
     if (typeof raw === "number") {
       return String(raw) === value.trim();
     }
-    return String(raw).toLowerCase().includes(value.trim().toLowerCase());
+    // Exact string match (substring match would e.g. let qwen3_omni match qwen3_omni_chunk).
+    return String(raw).trim() === value.trim();
   }));
 }
 
