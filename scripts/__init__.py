@@ -1,1 +1,1 @@
-# Package marker for unit tests.
+# Scripts package for tests (from repo root: pythonpath .).
