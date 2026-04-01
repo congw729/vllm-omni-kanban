@@ -1,7 +1,10 @@
-# Ingest perf JSON from Buildkite after vllm-omni nightly dispatches this event.
+# Ingest perf JSON from Buildkite: schedule (default path, no vllm-omni dispatch), repository_dispatch, or workflow_dispatch.
 name: Ingest Buildkite nightly perf
 
 on:
+  schedule:
+    # UTC — set after vllm-omni scheduled nightly usually finishes and artifacts exist (tune per pipeline).
+    - cron: "0 14 * * *"
   repository_dispatch:
     types: [buildkite_nightly_perf]
   workflow_dispatch:
@@ -41,51 +44,93 @@ jobs:
       - name: Resolve Buildkite coordinates
         id: coords
         run: |
-          BN="${{ github.event.client_payload.build_number || github.event.inputs.build_number }}"
-          ORG="${{ github.event.client_payload.org_slug || github.event.inputs.org_slug || env.BK_ORG }}"
-          PIPE="${{ github.event.client_payload.pipeline_slug || github.event.inputs.pipeline_slug || env.BK_PIPE }}"
-          COMMIT="${{ github.event.client_payload.commit || '' }}"
-          BURL="${{ github.event.client_payload.build_url || '' }}"
-          echo "build_number=$BN" >> "$GITHUB_OUTPUT"
-          echo "org=$ORG" >> "$GITHUB_OUTPUT"
-          echo "pipeline=$PIPE" >> "$GITHUB_OUTPUT"
-          echo "commit=$COMMIT" >> "$GITHUB_OUTPUT"
-          echo "build_url=$BURL" >> "$GITHUB_OUTPUT"
-          if [ -z "$BN" ]; then echo "Missing build number"; exit 1; fi
-          if [ -z "$ORG" ] || [ -z "$PIPE" ]; then echo "Set BUILDKITE_ORG / BUILDKITE_PIPELINE secrets or pass via dispatch payload."; exit 1; fi
+          set -euo pipefail
+          EVENT="${{ github.event_name }}"
+          BN="${{ github.event.client_payload && github.event.client_payload.build_number || github.event.inputs.build_number || '' }}"
+          ORG="${{ github.event.client_payload && github.event.client_payload.org_slug || github.event.inputs.org_slug || env.BK_ORG }}"
+          PIPE="${{ github.event.client_payload && github.event.client_payload.pipeline_slug || github.event.inputs.pipeline_slug || env.BK_PIPE }}"
+          COMMIT="${{ github.event.client_payload && github.event.client_payload.commit || '' }}"
+          BURL="${{ github.event.client_payload && github.event.client_payload.build_url || '' }}"
+          {
+            echo "build_number=$BN"
+            echo "org=$ORG"
+            echo "pipeline=$PIPE"
+            echo "commit=$COMMIT"
+            echo "build_url=$BURL"
+          } >> "$GITHUB_OUTPUT"
+          if [ -z "$ORG" ] || [ -z "$PIPE" ]; then
+            echo "Set BUILDKITE_ORG / BUILDKITE_PIPELINE_SLUG secrets or pass via dispatch payload."
+            exit 1
+          fi
+          if [ "$EVENT" = "schedule" ]; then
+            echo "auto_resolve=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "auto_resolve=false" >> "$GITHUB_OUTPUT"
+            if [ -z "$BN" ]; then echo "Missing build number"; exit 1; fi
+          fi
         env:
           BK_ORG: ${{ secrets.BUILDKITE_ORG }}
           BK_PIPE: ${{ secrets.BUILDKITE_PIPELINE_SLUG }}
 
       - name: Fetch perf JSON from Buildkite
+        id: fetch_perf
         env:
           BUILDKITE_API_TOKEN: ${{ secrets.BUILDKITE_API_TOKEN }}
           BUILDKITE_ORG: ${{ steps.coords.outputs.org }}
           BUILDKITE_PIPELINE: ${{ steps.coords.outputs.pipeline }}
         run: |
-          python scripts/fetch_buildkite_perf_json.py \
-            --org "${{ steps.coords.outputs.org }}" \
-            --pipeline "${{ steps.coords.outputs.pipeline }}" \
-            --build "${{ steps.coords.outputs.build_number }}" \
-            --output-dir "${{ runner.temp }}/perf_json"
+          set -euo pipefail
+          ORG="${{ steps.coords.outputs.org }}"
+          PIPE="${{ steps.coords.outputs.pipeline }}"
+          OUT="${{ runner.temp }}/perf_json"
+          if [ "${{ steps.coords.outputs.auto_resolve }}" = "true" ]; then
+            python scripts/fetch_buildkite_perf_json.py \
+              --org "$ORG" \
+              --pipeline "$PIPE" \
+              --output-dir "$OUT" \
+              --write-resolved-to-github-output
+          else
+            python scripts/fetch_buildkite_perf_json.py \
+              --org "$ORG" \
+              --pipeline "$PIPE" \
+              --build "${{ steps.coords.outputs.build_number }}" \
+              --output-dir "$OUT" \
+              --write-resolved-to-github-output
+          fi
 
       - name: Ingest into data/results
+        env:
+          RES_BN: ${{ steps.fetch_perf.outputs.resolved_build_number }}
+          RES_COMMIT: ${{ steps.fetch_perf.outputs.resolved_commit }}
+          RES_URL: ${{ steps.fetch_perf.outputs.resolved_build_url }}
+          COORDS_BN: ${{ steps.coords.outputs.build_number }}
+          COORDS_COMMIT: ${{ steps.coords.outputs.commit }}
+          COORDS_URL: ${{ steps.coords.outputs.build_url }}
         run: |
+          set -euo pipefail
+          BN="${RES_BN:-$COORDS_BN}"
+          COMMIT="${RES_COMMIT:-$COORDS_COMMIT}"
+          BURL="${RES_URL:-$COORDS_URL}"
           python scripts/ingest_nightly_perf_json.py \
             --input-dir "${{ runner.temp }}/perf_json" \
-            --commit "${{ steps.coords.outputs.commit }}" \
-            --build-url "${{ steps.coords.outputs.build_url }}" \
-            --build-number "${{ steps.coords.outputs.build_number }}"
+            --commit "$COMMIT" \
+            --build-url "$BURL" \
+            --build-number "$BN"
 
       - name: Commit and push
+        env:
+          RES_BN: ${{ steps.fetch_perf.outputs.resolved_build_number }}
+          COORDS_BN: ${{ steps.coords.outputs.build_number }}
         run: |
+          set -euo pipefail
+          BN="${RES_BN:-$COORDS_BN}"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git add data/results/
           if git diff --staged --quiet; then
             echo "No data changes."
           else
-            git commit -m "chore(data): ingest nightly perf build ${{ steps.coords.outputs.build_number }}"
+            git commit -m "chore(data): ingest nightly perf build ${BN}"
             git push
           fi
 

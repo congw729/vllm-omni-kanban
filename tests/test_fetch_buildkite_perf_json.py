@@ -6,6 +6,7 @@ import pytest
 
 from scripts.fetch_buildkite_perf_json import (
     _append_matching_builds_until_cap,
+    append_resolved_build_github_output,
     build_matches_latest_nightly_criteria,
     first_matching_build_number,
     is_perf_artifact_filename,
@@ -50,6 +51,22 @@ def test_first_matching_build_number_order() -> None:
         builds, message_contains="Scheduled nightly build", require_state="passed"
     )
     assert found == "5575"
+
+
+def test_append_resolved_build_github_output(tmp_path, monkeypatch) -> None:
+    gh_out = tmp_path / "github_output.txt"
+    gh_out.write_text("", encoding="utf-8")
+    monkeypatch.setenv("GITHUB_OUTPUT", str(gh_out))
+    append_resolved_build_github_output(build_no="5575", commit="deadbeef", web_url="https://buildkite.com/build/5575")
+    text = gh_out.read_text(encoding="utf-8")
+    assert "resolved_build_number=5575\n" in text
+    assert "resolved_commit=deadbeef\n" in text
+    assert "resolved_build_url=https://buildkite.com/build/5575\n" in text
+
+
+def test_append_resolved_build_github_output_skips_without_env(monkeypatch) -> None:
+    monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
+    append_resolved_build_github_output(build_no="1", commit="", web_url="")
 
 
 def test_append_matching_builds_until_cap_respects_order_and_cap() -> None:

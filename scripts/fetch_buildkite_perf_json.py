@@ -14,6 +14,7 @@ By default --latest-build-state is any (passed and failed); failed runs may stil
 When --build is omitted (auto-resolve), prints the newest 5 matching branch builds on stderr
 before download. With explicit --build, listing is off by default; pass --list-matching-builds N
 to show the newest N matching builds for context (or 0 to disable auto-resolve listing).
+In GitHub Actions, pass --write-resolved-to-github-output to append resolved build metadata to GITHUB_OUTPUT.
 """
 
 from __future__ import annotations
@@ -196,11 +197,61 @@ def _builds_list_url(org: str, pipeline: str, *, branch: str, page: int) -> str:
     return f"{API_ROOT}/organizations/{o}/pipelines/{pl}/builds?{q}"
 
 
+def _build_show_url(org: str, pipeline: str, build: str) -> str:
+    o = urllib.parse.quote(org)
+    pl = urllib.parse.quote(pipeline)
+    b = urllib.parse.quote(build)
+    return f"{API_ROOT}/organizations/{o}/pipelines/{pl}/builds/{b}"
+
+
 def _artifact_list_url(org: str, pipeline: str, build: str) -> str:
     o = urllib.parse.quote(org)
     pl = urllib.parse.quote(pipeline)
     b = urllib.parse.quote(build)
     return f"{API_ROOT}/organizations/{o}/pipelines/{pl}/builds/{b}/artifacts"
+
+
+def fetch_build_metadata(org: str, pipeline: str, build_no: str, token: str) -> tuple[str, str]:
+    """Best-effort (commit_sha, web_url) for GitHub Actions ingest metadata."""
+    url = _build_show_url(org, pipeline, build_no)
+    try:
+        data = _request_json(url, token)
+    except (urllib.error.HTTPError, OSError):
+        return "", ""
+    if not isinstance(data, dict):
+        return "", ""
+    commit = ""
+    c = data.get("commit")
+    if isinstance(c, str):
+        commit = c.strip()
+    elif isinstance(c, dict):
+        commit = str(c.get("id") or c.get("sha") or "").strip()
+    web = str(data.get("web_url") or data.get("url") or "").strip()
+    return commit, web
+
+
+def append_resolved_build_github_output(
+    *,
+    build_no: str,
+    commit: str,
+    web_url: str,
+) -> None:
+    """Append named outputs for GitHub Actions (respects GITHUB_OUTPUT)."""
+    out_path = os.environ.get("GITHUB_OUTPUT", "").strip()
+    if not out_path:
+        return
+    pairs = {
+        "resolved_build_number": build_no,
+        "resolved_commit": commit,
+        "resolved_build_url": web_url,
+    }
+    with open(out_path, "a", encoding="utf-8") as fh:
+        for key, value in pairs.items():
+            if "\n" in value:
+                delim = "GITHUB_OUTPUT_EOF"
+                fh.write(f"{key}<<{delim}\n{value}\n{delim}\n")
+            else:
+                fh.write(f"{key}={value}\n")
 
 
 def fetch_all_artifact_records(org: str, pipeline: str, build: str, token: str) -> list[dict]:
@@ -329,6 +380,11 @@ def main() -> None:
         help="Only artifacts in this state (default: finished); use empty string for any",
     )
     parser.add_argument("--dry-run", action="store_true", help="List only, no download")
+    parser.add_argument(
+        "--write-resolved-to-github-output",
+        action="store_true",
+        help="Append resolved_build_number, resolved_commit, resolved_build_url to $GITHUB_OUTPUT (for Actions).",
+    )
     args = parser.parse_args()
 
     org = args.org.strip()
@@ -444,6 +500,10 @@ def main() -> None:
             f"Hint: this build has {len(records)} total artifact row(s) from the API; check paths if expecting other names.\n",
         )
         sys.exit(1)
+
+    if args.write_resolved_to_github_output:
+        meta_c, meta_u = fetch_build_metadata(org, pipeline, build_no, token)
+        append_resolved_build_github_output(build_no=build_no, commit=meta_c, web_url=meta_u)
 
 
 if __name__ == "__main__":
