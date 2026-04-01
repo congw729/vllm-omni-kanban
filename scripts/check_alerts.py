@@ -1,4 +1,5 @@
 from __future__ import annotations
+from scripts.common import flatten_metrics, load_json, parse_timestamp, save_json
 
 import os
 import smtplib
@@ -14,7 +15,6 @@ import requests
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-from scripts.common import flatten_metrics, load_json, parse_timestamp, save_json
 
 # Configure logging
 logging.basicConfig(
@@ -28,6 +28,7 @@ RESULTS_DIR = DATA_DIR / "results"
 INDEX_PATH = DATA_DIR / "index.json"
 CONFIG_PATH = DATA_DIR / "config.json"
 ALERTS_PATH = DATA_DIR / "alerts.json"
+
 
 def alert_id(result: dict[str, Any], metric: str, level: str, kind: str) -> str:
     raw = f"{result['hardware']}-{result['model']}-{metric}-{level}-{kind}"
@@ -43,28 +44,35 @@ def check_absolute_thresholds(result: dict[str, Any], config: dict[str, Any]) ->
     pass_rate = flat.get("pass_rate")
     if isinstance(pass_rate, (int, float)):
         if pass_rate < thresholds["pass_rate_critical"]:
-            alerts.append({"metric": "pass_rate", "level": "critical", "value": pass_rate, "kind": "absolute"})
+            alerts.append({"metric": "pass_rate", "level": "critical",
+                          "value": pass_rate, "kind": "absolute"})
         elif pass_rate < thresholds["pass_rate_warning"]:
-            alerts.append({"metric": "pass_rate", "level": "warning", "value": pass_rate, "kind": "absolute"})
+            alerts.append({"metric": "pass_rate", "level": "warning",
+                          "value": pass_rate, "kind": "absolute"})
 
-    latency_threshold = overrides.get("latency_p99_ms_critical", thresholds["latency_p99_ms_critical"])
+    latency_threshold = overrides.get(
+        "latency_p99_ms_critical", thresholds["latency_p99_ms_critical"])
     latency = flat.get("latency_p99_ms")
     if isinstance(latency, (int, float)) and latency > latency_threshold:
-        alerts.append({"metric": "latency_p99_ms", "level": "critical", "value": latency, "kind": "absolute"})
+        alerts.append({"metric": "latency_p99_ms", "level": "critical",
+                      "value": latency, "kind": "absolute"})
 
     crash_count = flat.get("crash_count")
     if isinstance(crash_count, (int, float)) and crash_count >= thresholds["crash_count_critical"]:
-        alerts.append({"metric": "crash_count", "level": "critical", "value": crash_count, "kind": "absolute"})
+        alerts.append({"metric": "crash_count", "level": "critical",
+                      "value": crash_count, "kind": "absolute"})
 
     return alerts
 
 
 def compute_baseline(index: dict[str, Any], latest_date: str) -> dict[tuple[str, str], dict[str, float]]:
-    baseline_dates = [date for date in sorted(index["dates"]) if date < latest_date][-7:]
+    baseline_dates = [date for date in sorted(
+        index["dates"]) if date < latest_date][-7:]
     aggregates: dict[tuple[str, str], dict[str, list[float]]] = {}
 
     for date_str in baseline_dates:
-        results = load_json(RESULTS_DIR / f"{date_str}.json", {"results": []}).get("results", [])
+        results = load_json(
+            RESULTS_DIR / f"{date_str}.json", {"results": []}).get("results", [])
         for result in results:
             key = (result["hardware"], result["model"])
             flat = flatten_metrics(result["metrics"])
@@ -74,7 +82,8 @@ def compute_baseline(index: dict[str, Any], latest_date: str) -> dict[tuple[str,
                     bucket.setdefault(metric, []).append(float(value))
 
     return {
-        key: {metric: sum(values) / len(values) for metric, values in metrics.items() if len(values) >= len(baseline_dates)}
+        key: {metric: sum(values) / len(values) for metric,
+              values in metrics.items() if len(values) >= len(baseline_dates)}
         for key, metrics in aggregates.items()
     } if len(baseline_dates) >= 7 else {}
 
@@ -87,9 +96,12 @@ def check_regressions(result: dict[str, Any], baseline: dict[str, float], config
     alerts = []
 
     checks = [
-        ("pass_rate", "warning", baseline.get("pass_rate"), flat.get("pass_rate"), -thresholds["pass_rate_drop"]),
-        ("latency_p99_ms", "warning", baseline.get("latency_p99_ms"), flat.get("latency_p99_ms"), thresholds["latency_p99_increase"]),
-        ("ttft_ms", "warning", baseline.get("ttft_ms"), flat.get("ttft_ms"), thresholds["ttft_increase"]),
+        ("pass_rate", "warning", baseline.get("pass_rate"),
+         flat.get("pass_rate"), -thresholds["pass_rate_drop"]),
+        ("latency_p99_ms", "warning", baseline.get("latency_p99_ms"),
+         flat.get("latency_p99_ms"), thresholds["latency_p99_increase"]),
+        ("ttft_ms", "warning", baseline.get("ttft_ms"),
+         flat.get("ttft_ms"), thresholds["ttft_increase"]),
         (
             "throughput_tokens_per_sec",
             "warning",
@@ -162,7 +174,8 @@ def format_alert_message(result: dict[str, Any], alert: dict[str, Any]) -> str:
 def send_wechat(message: str, webhook_url: str | None) -> None:
     if not webhook_url:
         return
-    response = requests.post(webhook_url, json={"msgtype": "text", "text": {"content": message}}, timeout=10)
+    response = requests.post(webhook_url, json={"msgtype": "text", "text": {
+                             "content": message}}, timeout=10)
     response.raise_for_status()
 
 
@@ -216,34 +229,33 @@ def resolve_cleared_alerts(alerts_by_id: dict[str, dict[str, Any]], active_ids: 
 
 def check_data_freshness(index: dict[str, Any], freshness_threshold_hours: int = 26) -> dict[str, Any] | None:
     """Check if data is stale (> freshness_threshold_hours old).
-    
+
     Args:
         index: Index data containing last_updated timestamp
         freshness_threshold_hours: Maximum age in hours before alert (default: 26)
-        
+
     Returns:
         Alert dict if data is stale, None otherwise
     """
     if not index.get("last_updated"):
         logger.warning("No last_updated timestamp in index")
         return None
-    
+
     last_update_str = index["last_updated"]
     try:
         last_updated = parse_timestamp(last_update_str)
     except (ValueError, TypeError) as e:
-        logger.error(f"Invalid timestamp format: {last_update_str}, error: {e}")
+        logger.error(
+            f"Invalid timestamp format: {last_update_str}, error: {e}")
         return None
 
     now = datetime.now(timezone.utc)
-    if last_updated.tzinfo is None:
-        last_updated_utc = last_updated.replace(tzinfo=timezone.utc)
-    else:
-        last_updated_utc = last_updated.astimezone(timezone.utc)
+    last_updated_utc = _datetime_utc(last_updated)
     age_hours = (now - last_updated_utc).total_seconds() / 3600
-    
+
     if age_hours > freshness_threshold_hours:
-        logger.warning(f"Data stale: last update was {age_hours:.1f} hours ago (threshold: {freshness_threshold_hours}h)")
+        logger.warning(
+            f"Data stale: last update was {age_hours:.1f} hours ago (threshold: {freshness_threshold_hours}h)")
         return {
             "metric": "data_freshness",
             "level": "warning",
@@ -251,7 +263,7 @@ def check_data_freshness(index: dict[str, Any], freshness_threshold_hours: int =
             "kind": "absolute",
             "message": f"Data is {age_hours:.1f} hours old (threshold: {freshness_threshold_hours}h)",
         }
-    
+
     logger.info(f"Data fresh: last update was {age_hours:.1f} hours ago")
     return None
 
@@ -259,7 +271,7 @@ def check_data_freshness(index: dict[str, Any], freshness_threshold_hours: int =
 def main() -> int:
     config = load_json(CONFIG_PATH, {})
     index = load_json(INDEX_PATH, {"dates": []})
-    
+
     # Check data freshness first
     freshness_alert = check_data_freshness(index)
     if freshness_alert:
@@ -272,13 +284,14 @@ def main() -> int:
         )
         send_wechat(message, os.getenv("WECHAT_WEBHOOK"))
         send_email(message)
-    
+
     if not index["dates"]:
         print("no results available")
         return 0
 
     latest_date = sorted(index["dates"])[-1]
-    latest_results = load_json(RESULTS_DIR / f"{latest_date}.json", {"results": []}).get("results", [])
+    latest_results = load_json(
+        RESULTS_DIR / f"{latest_date}.json", {"results": []}).get("results", [])
     history = load_json(ALERTS_PATH, {"alerts": []})
     alerts_by_id = {item["id"]: item for item in history.get("alerts", [])}
     now = datetime.now(timezone.utc)
@@ -293,7 +306,8 @@ def main() -> int:
             config,
         )
         for alert in candidate_alerts:
-            item_id = alert_id(result, alert["metric"], alert["level"], alert["kind"])
+            item_id = alert_id(
+                result, alert["metric"], alert["level"], alert["kind"])
             active_ids.add(item_id)
             existing = alerts_by_id.get(item_id)
             if existing and within_cooldown(existing, now):
@@ -321,9 +335,11 @@ def main() -> int:
                 record["delta"] = alert["delta"]
             alerts_by_id[item_id] = record
 
-    latest_timestamp = max((result["timestamp"] for result in latest_results), default=now.isoformat())
+    latest_timestamp = max(
+        (result["timestamp"] for result in latest_results), default=now.isoformat())
     resolve_cleared_alerts(alerts_by_id, active_ids, latest_timestamp)
-    payload = {"alerts": sorted(alerts_by_id.values(), key=lambda item: item["last_triggered"], reverse=True)}
+    payload = {"alerts": sorted(alerts_by_id.values(
+    ), key=lambda item: item["last_triggered"], reverse=True)}
     save_json(ALERTS_PATH, payload)
     print(f"tracked {len(payload['alerts'])} alerts")
     return 0

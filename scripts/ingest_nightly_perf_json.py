@@ -54,8 +54,10 @@ def _parse_omni_timestamp(date_val: str | None) -> str:
     if not date_val or len(date_val) < 15:
         return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     # YYYYMMDD-HHMMSS
-    d, t = date_val.split("-", 1)
-    return f"{d[:4]}-{d[4:6]}-{d[6:8]}T{t[:2]}:{t[2:4]}:{t[4:6]}Z"
+    parts = date_val.split("-", 1)
+    if len(parts) != 2:
+        return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    d, t = parts
 
 
 def _pick_performance_metrics(raw: dict[str, Any]) -> dict[str, Any]:
@@ -112,7 +114,8 @@ def entries_from_file(
             if not isinstance(row, dict):
                 continue
             model = row.get("model") or row.get("model_id") or "unknown"
-            ts = row.get("timestamp") or row.get("date") or _parse_omni_timestamp(None)
+            ts = row.get("timestamp") or row.get(
+                "date") or _parse_omni_timestamp(None)
             if isinstance(ts, str) and len(ts) == 15 and ts[8] == "-":
                 ts = _parse_omni_timestamp(ts)
             elif not isinstance(ts, str) or "T" not in ts:
@@ -161,8 +164,10 @@ def load_results_list(results_path: Path) -> list[dict[str, Any]]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Ingest perf JSON files into data/results daily file.")
-    parser.add_argument("--input-dir", required=True, help="Directory with downloaded *.json")
+    parser = argparse.ArgumentParser(
+        description="Ingest perf JSON files into data/results daily file.")
+    parser.add_argument("--input-dir", required=True,
+                        help="Directory with downloaded *.json")
     parser.add_argument(
         "--date",
         default=None,
@@ -173,7 +178,8 @@ def main() -> None:
         default="data/results",
         help="Root directory for daily JSON files",
     )
-    parser.add_argument("--commit", default="", help="Git commit from Buildkite")
+    parser.add_argument("--commit", default="",
+                        help="Git commit from Buildkite")
     parser.add_argument("--build-url", default="", help="Build URL")
     parser.add_argument("--build-number", default="", help="Build number")
     args = parser.parse_args()
@@ -195,7 +201,8 @@ def main() -> None:
         if not path.is_file():
             continue
         if not (
-            path.name.startswith("result_test_") or path.name.startswith("benchmark_results_")
+            path.name.startswith("result_test_") or path.name.startswith(
+                "benchmark_results_")
         ):
             continue
         for entry in entries_from_file(
@@ -211,8 +218,10 @@ def main() -> None:
             new_entries.append(entry)
 
     merged = existing + new_entries
-    results_path.write_text(json.dumps(merged, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"Wrote {results_path} ({len(new_entries)} new, {len(merged)} total entries).")
+    results_path.write_text(json.dumps(
+        merged, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(
+        f"Wrote {results_path} ({len(new_entries)} new, {len(merged)} total entries).")
 
 
 if __name__ == "__main__":
