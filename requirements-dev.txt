@@ -1,1 +1,2 @@
-pytest>=8.0
+# Full pins for scripts, MkDocs, and tests. Unit tests import non-stdlib deps (e.g. requests).
+-r requirements.txt
