@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-02  
 **Last updated:** 2026-04-02  
-**Status:** In progress (sync + MkDocs hook implemented; filename/`request_rate` chart pipeline items still open — see §8)  
+**Status:** In progress (sync + MkDocs hook implemented; Qwen3 Omni **history** pipeline items in §8.2 still open)  
 **References:** [Kanban design](2025-03-13-kanban-design.md) · [Implementation plan](2026-03-13-implementation-plan.md)
 
 ---
@@ -30,8 +30,8 @@ Nightly artifacts land first under **`data/buildkite_nightly_raw/<build_number>/
 |------|----------|
 | Fetch | CI or local `fetch_buildkite_nightly_files.py` writes under `data/buildkite_nightly_raw/<build>/...`. |
 | Collect | **`scripts/sync_buildkite_raw_model_results.py`** copies `result_test_*.json` paths containing `--model-keywords` into `data/results/<model-name>/`. Same basename under multiple builds: **higher numeric build folder wins**, then **newer mtime**. If `data/buildkite_nightly_raw` is missing, the script **exits 0** and does nothing. |
-| **MkDocs** | **`mkdocs serve`** and **`mkdocs build`** load `mkdocs.yml` → **`hooks`** → **`scripts/mkdocs_hooks.py`**. On each CLI run, **`on_startup`** runs each entry in **`_BUILDKITE_RAW_SYNCS`** (currently `("qwen3omni", "qwen3_omni")`) via the sync script, then runs **`generate_charts.py`**. So a normal local preview **refreshes** `data/results/qwen3omni/` and **regenerates** `docs/assets/charts/*.json` before the site is served/built. |
-| Charts / page | `generate_charts.py` builds `qwen3_omni_history.json`; the Omni page consumes it. **Note:** filename parsing for `random-mm` float slots and **`request_rate` grouping in config** are still **to do** (see §8) — until then, some raw files may still be skipped or merged incorrectly. |
+| **MkDocs** | **`mkdocs serve`** and **`mkdocs build`** load `mkdocs.yml` → **`hooks`** → **`scripts/mkdocs_hooks.py`**. **`on_startup`** runs each entry in **`_BUILDKITE_RAW_SYNCS`** (currently `("qwen3omni", "qwen3_omni")`) via the sync script, then runs **`generate_charts.py`**. **Important:** `on_startup` runs **once per MkDocs process** (when `serve` / `build` starts), **not** on every live-reload rebuild. After adding new files under `buildkite_nightly_raw`, **restart `mkdocs serve`** or run `sync_buildkite_raw_model_results.py` + `generate_charts.py` manually to refresh charts. |
+| Charts / page | `generate_charts.py` builds `qwen3_omni_history.json`; the Omni page consumes it. Until §8.2 is done, **`random-mm`** filenames with a **float** third segment are **skipped** by `parse_qwen3_omni_filename`, and runs that differ only by **`request_rate`** may be **merged** incorrectly (see §8.2). |
 
 ---
 
@@ -54,7 +54,8 @@ scripts/generate_charts.py  →  docs/assets/charts/qwen3_omni_history.json (and
 ### 4.2 Local developer entry point
 
 - Run from repo root: **`mkdocs serve`** (or **`mkdocs build`**).
-- No separate manual sync step is required for preview **if** raw data already exists under `data/buildkite_nightly_raw/`.
+- No separate manual sync step is required for the **first** load **if** raw data already exists under `data/buildkite_nightly_raw/`.
+- After updating raw on disk, **restart the dev server** (or run the two scripts by hand) so `on_startup` runs again — see §3.
 - To add another model later: extend **`_BUILDKITE_RAW_SYNCS`** in `scripts/mkdocs_hooks.py` with a new `(model_name, model_keywords)` pair, and ensure `generate_charts` / any dedicated page reads from `data/results/<model_name>/`.
 
 ### 4.3 CI (optional follow-up)
@@ -87,54 +88,66 @@ scripts/generate_charts.py  →  docs/assets/charts/qwen3_omni_history.json (and
 - **CLI:** `--model-name <dir under data/results/>` (validated single segment), **`--model-keywords <substring>`** (required), optional `--raw-root`, `--dry-run`, `--move`, `-v`.
 - **MkDocs:** `scripts/mkdocs_hooks.py` invokes it once per tuple in **`_BUILDKITE_RAW_SYNCS`**.
 
-### 5.4 `generate_charts.py`: filename parsing + JSON first (planned)
+### 5.4 `generate_charts.py`: filename parsing + JSON first (§8.2)
 
 **Merge order** after loading each `result_test_*.json`:
 
 1. From **file body:** `num_prompts`, `max_concurrency`, `request_rate`, `date`, plus existing fields such as `endpoint_type`, `backend`, `model_id`, `tokenizer_id`.
 2. From **filename:** `test_name`, `dataset_name`, and fallbacks only when missing from the file.
-3. **Overrides:** Non-null values from step 1 **win**; `request_rate` from file when present.
+3. **Overrides:** Values from step 1 **win** where defined; **`request_rate`** must match JSON when the key is present (including numeric vs `"inf"`).
 
 **`random-mm` / float slot:** If the third-from-end filename segment parses as **float**, treat as request-rate encoding; **do not** `int()` it.
 
-**Timestamps:** Prefer **`date` in JSON** for `sort_timestamp` when parseable; else filename timestamp.
+**Timestamps:** Prefer **`date` in JSON** (`%Y%m%d-%H%M%S` style as in artifacts) for `sort_timestamp` / display `date` when parseable; else filename timestamp.
 
-### 5.5 Grouping / filters: `request_rate` (planned)
+### 5.5 Grouping / filters: `request_rate` (§8.2)
 
 - Add **`request_rate`** to `QWEN3_OMNI_GROUP_FIELDS` in `generate_charts.py`.
 - Add **`request_rate`** to `kanban_pages.qwen3_omni_history.filters` and `table_columns` in `data/config.json`.
-- Normalize numeric vs `"inf"` consistently in grouping and tests.
+- Normalize numeric vs `"inf"` / missing consistently in grouping keys (align with §9 open questions if needed).
 
-### 5.6 Front end (if needed)
+### 5.6 Front end (§8.2)
 
-- Extend series labels / tooltips if `request_rate` is added to grouping (e.g. `render_charts.js`).
+- **`render_charts.js`:** Extend `buildSeriesLabel`, chart tooltip `meta`, and any legend text so **`request_rate`** is visible when present (e.g. `rr=`), so series do not look identical when only rate differs.
 
 ---
 
 ## 6. Testing plan (TDD order)
 
-1. **`parse_qwen3_omni_filename` / merge helper** — `random-mm` + `0.1` + valid timestamp; JSON overrides.
-2. **`load_qwen3_omni_history`** — includes former skip cases for `random-mm`.
-3. **`sync_buildkite_raw_model_results`** — temp raw tree, keyword filter, collision policy; **`tests/unit/test_sync_buildkite_raw_model_results.py`**.
-4. **Regression:** `pytest` + **`mkdocs serve`** → open Qwen3 Omni page; confirm data and charts.
+1. **`parse_qwen3_omni_filename` / merge helper** — `random-mm` + `0.1` + valid timestamp; JSON overrides for `request_rate`, `max_concurrency`, `date`.
+2. **`load_qwen3_omni_history`** — records previously skipped (float filename slot); distinct groups for distinct `request_rate`.
+3. **`sync_buildkite_raw_model_results`** — `tests/unit/test_sync_buildkite_raw_model_results.py` (keyword filter, collision policy).
+4. **Regression:** `pytest` + **`mkdocs serve`** (after restart if raw changed) → open Qwen3 Omni page.
 
 ---
 
 ## 7. Documentation & ops
 
-- **Local preview:** Document that **`mkdocs serve`** runs sync + `generate_charts` via **`mkdocs.yml` → `hooks` → `scripts/mkdocs_hooks.py`** (this section + §3).
+- **Local preview:** **`mkdocs serve`** / **`build`** triggers sync + `generate_charts` via **`mkdocs.yml` → `hooks` → `scripts/mkdocs_hooks.py`** (see §3 for `on_startup` frequency).
 - Optional: one line in `contributing.md` pointing to this plan.
 
 ---
 
-## 8. Rollout checklist
+## 8. Checklist
 
-- [x] Add `scripts/sync_buildkite_raw_model_results.py` + unit tests  
-- [x] **`mkdocs.yml`** registers **`scripts/mkdocs_hooks.py`**; hook runs sync (per `_BUILDKITE_RAW_SYNCS`) then **`generate_charts.py`**  
-- [ ] Update `generate_charts.py` (float filename slot + JSON-first + `request_rate` in `QWEN3_OMNI_GROUP_FIELDS`) + `test_generate_charts.py`  
-- [ ] Update `data/config.json` (`filters` / `table_columns` for `request_rate`)  
-- [ ] (Optional) `.github/workflows/...`: sync + `generate_charts` before commit/deploy  
-- [ ] Verify with real `buildkite_nightly_raw`: `record_count` and `random-mm` groups in `qwen3_omni_history.json`  
+### 8.1 Done
+
+- [x] `scripts/sync_buildkite_raw_model_results.py` + unit tests (`tests/unit/test_sync_buildkite_raw_model_results.py`)
+- [x] `mkdocs.yml` → `hooks` → `scripts/mkdocs_hooks.py` (`_BUILDKITE_RAW_SYNCS` + `generate_charts.py`)
+
+### 8.2 TODO — `generate_charts.py` / `request_rate` / UI (remaining product work)
+
+- [ ] **`parse_qwen3_omni_filename`:** If `parts[-3]` is a **float** (e.g. `0.1`), treat as **request-rate slot** in the filename; **do not** call `int()` on it. If it is an **int**, treat as **`max_concurrency`** in the filename. Reject truly invalid segments.
+- [ ] **`load_qwen3_omni_history` merge:** **JSON first** for `num_prompts`, `max_concurrency`, `request_rate`, `date` / `sort_timestamp` when present; filename fills gaps and supplies `test_name` / `dataset_name`. If JSON has **`max_concurrency: null`**, do **not** overwrite with a bogus int from a float slot.
+- [ ] **`QWEN3_OMNI_GROUP_FIELDS`:** Append **`request_rate`** (order near `num_prompts`) so `config_key` / grouping / `qwen3_omni_history.json` split rate-swept configs.
+- [ ] **`data/config.json`:** Add **`request_rate`** to `kanban_pages.qwen3_omni_history.filters` and `table_columns`.
+- [ ] **`docs/assets/js/render_charts.js`:** Show **`request_rate`** in series labels / tooltip meta (and any other place where `mc` / `np` are shown).
+- [ ] **`tests/unit/test_generate_charts.py`:** Cover float filename + JSON `request_rate`; cover different rates → different groups; cover JSON `date` driving sort/display.
+
+### 8.3 Optional / verification
+
+- [ ] `.github/workflows/...`: run sync (per model) + `generate_charts` before commit or deploy when desired.
+- [ ] Manual check on a real `buildkite_nightly_raw` tree: `qwen3_omni_history.json` **record_count** includes `random-mm` rows; multiple **`request_rate`** values appear as separate series/groups.
 
 ---
 
@@ -146,4 +159,4 @@ scripts/generate_charts.py  →  docs/assets/charts/qwen3_omni_history.json (and
 
 ---
 
-**Next step:** Finish §8 unchecked items (especially `generate_charts` + `config.json`), then validate on a full nightly tree.
+**Next step:** Complete §8.2, then §8.3 verification.
