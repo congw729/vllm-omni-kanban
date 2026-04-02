@@ -1,4 +1,4 @@
-"""MkDocs hooks: regenerate chart JSON before the first build of each CLI run.
+"""MkDocs hooks: sync Buildkite raw JSON into data/results, then regenerate charts.
 
 Uses on_startup (not on_pre_build) so writes under docs/assets/charts/ do not
 re-trigger livereload in an endless loop; generate_charts updates generated_at every run.
@@ -10,12 +10,36 @@ import subprocess
 import sys
 from pathlib import Path
 
+# (model_name subdirectory under data/results/, path substring for matching under buildkite_nightly_raw)
+_BUILDKITE_RAW_SYNCS: tuple[tuple[str, str], ...] = (
+    ("qwen3omni", "qwen3_omni"),
+)
+
 
 def on_startup(command: str, dirty: bool, **kwargs) -> None:
     repo_root = Path(__file__).resolve().parent.parent
-    script = repo_root / "scripts" / "generate_charts.py"
+    sync_script = repo_root / "scripts" / "sync_buildkite_raw_model_results.py"
+    for model_name, model_keywords in _BUILDKITE_RAW_SYNCS:
+        proc = subprocess.run(
+            [
+                sys.executable,
+                str(sync_script),
+                "--model-name",
+                model_name,
+                "--model-keywords",
+                model_keywords,
+            ],
+            cwd=str(repo_root),
+            check=False,
+        )
+        if proc.returncode != 0:
+            raise RuntimeError(
+                f"sync_buildkite_raw_model_results.py ({model_name}) exited with status {proc.returncode}",
+            )
+
+    gen_script = repo_root / "scripts" / "generate_charts.py"
     proc = subprocess.run(
-        [sys.executable, str(script)],
+        [sys.executable, str(gen_script)],
         cwd=str(repo_root),
         check=False,
     )
