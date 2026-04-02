@@ -28,6 +28,13 @@ import urllib.parse
 import urllib.request
 from pathlib import Path, PurePosixPath
 
+# When this module is imported as ``scripts.fetch_buildkite_nightly_files`` (e.g. pytest),
+# ``sys.path`` has the repo root but not ``scripts/``, so a bare ``retry_utils`` import fails.
+# Prepending this file's directory matches direct ``python scripts/...py`` behavior.
+_scripts_dir = str(Path(__file__).resolve().parent)
+if _scripts_dir not in sys.path:
+    sys.path.insert(0, _scripts_dir)
+
 from retry_utils import with_retry
 
 
