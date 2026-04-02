@@ -1,0 +1,142 @@
+# Sync nightly perf-related files from Buildkite (JSON/HTML): schedule, repository_dispatch, or workflow_dispatch.
+name: Sync Buildkite nightly files
+
+on:
+  schedule:
+    # UTC — set after vllm-omni scheduled nightly usually finishes and artifacts exist (tune per pipeline).
+    - cron: "0 20 * * *"
+  repository_dispatch:
+    types: [buildkite_nightly_perf]
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: Buildkite build number (optional — leave empty to auto-resolve like schedule)
+        required: false
+        type: string
+        default: ""
+      org_slug:
+        description: Buildkite organization slug
+        required: false
+        type: string
+      pipeline_slug:
+        description: Buildkite pipeline slug
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-buildkite-nightly-files-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  sync_raw:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Resolve Buildkite coordinates
+        id: coords
+        run: |
+          set -euo pipefail
+          EVENT="${{ github.event_name }}"
+          BN="${{ github.event.client_payload && github.event.client_payload.build_number || github.event.inputs.build_number || '' }}"
+          ORG="${{ github.event.client_payload && github.event.client_payload.org_slug || github.event.inputs.org_slug || env.BK_ORG }}"
+          PIPE="${{ github.event.client_payload && github.event.client_payload.pipeline_slug || github.event.inputs.pipeline_slug || env.BK_PIPE }}"
+          COMMIT="${{ github.event.client_payload && github.event.client_payload.commit || '' }}"
+          BURL="${{ github.event.client_payload && github.event.client_payload.build_url || '' }}"
+          {
+            echo "build_number=$BN"
+            echo "org=$ORG"
+            echo "pipeline=$PIPE"
+            echo "commit=$COMMIT"
+            echo "build_url=$BURL"
+          } >> "$GITHUB_OUTPUT"
+          if [ -z "$ORG" ] || [ -z "$PIPE" ]; then
+            echo "Set BUILDKITE_ORG / BUILDKITE_PIPELINE_SLUG secrets or pass via dispatch payload."
+            exit 1
+          fi
+          if [ "$EVENT" = "schedule" ] || { [ "$EVENT" = "workflow_dispatch" ] && [ -z "$BN" ]; }; then
+            echo "auto_resolve=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "auto_resolve=false" >> "$GITHUB_OUTPUT"
+            if [ -z "$BN" ]; then
+              echo "Missing build number (set workflow input or dispatch client_payload.build_number)."
+              exit 1
+            fi
+          fi
+        env:
+          BK_ORG: ${{ secrets.BUILDKITE_ORG }}
+          BK_PIPE: ${{ secrets.BUILDKITE_PIPELINE_SLUG }}
+
+      - name: Fetch nightly files from Buildkite
+        id: fetch_nightly
+        env:
+          BUILDKITE_API_TOKEN: ${{ secrets.BUILDKITE_API_TOKEN }}
+          BUILDKITE_ORG: ${{ steps.coords.outputs.org }}
+          BUILDKITE_PIPELINE: ${{ steps.coords.outputs.pipeline }}
+        run: |
+          set -euo pipefail
+          ORG="${{ steps.coords.outputs.org }}"
+          PIPE="${{ steps.coords.outputs.pipeline }}"
+          OUT="${{ runner.temp }}/bk_nightly_files"
+          if [ "${{ steps.coords.outputs.auto_resolve }}" = "true" ]; then
+            python scripts/fetch_buildkite_nightly_files.py \
+              --org "$ORG" \
+              --pipeline "$PIPE" \
+              --output-dir "$OUT" \
+              --write-resolved-to-github-output
+          else
+            python scripts/fetch_buildkite_nightly_files.py \
+              --org "$ORG" \
+              --pipeline "$PIPE" \
+              --build "${{ steps.coords.outputs.build_number }}" \
+              --output-dir "$OUT" \
+              --write-resolved-to-github-output
+          fi
+
+      - name: Copy fetched files into data/buildkite_nightly_raw
+        env:
+          RES_BN: ${{ steps.fetch_nightly.outputs.resolved_build_number }}
+          COORDS_BN: ${{ steps.coords.outputs.build_number }}
+        run: |
+          set -euo pipefail
+          BN="${RES_BN:-$COORDS_BN}"
+          DEST="data/buildkite_nightly_raw/${BN}"
+          mkdir -p "$DEST"
+          cp -a "${{ runner.temp }}/bk_nightly_files/." "$DEST/"
+
+      - name: Commit and push
+        id: commit_push
+        env:
+          RES_BN: ${{ steps.fetch_nightly.outputs.resolved_build_number }}
+          COORDS_BN: ${{ steps.coords.outputs.build_number }}
+        run: |
+          set -euo pipefail
+          BN="${RES_BN:-$COORDS_BN}"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add data/buildkite_nightly_raw/
+          if git diff --staged --quiet; then
+            echo "No data changes."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "chore(data): sync nightly Buildkite files build ${BN}"
+            git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy MkDocs (optional)
+        if: hashFiles('mkdocs.yml') != '' && steps.commit_push.outputs.changed == 'true'
+        run: |
+          pip install -r requirements.txt 2>/dev/null || pip install mkdocs-material
+          mkdocs gh-deploy --force
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
