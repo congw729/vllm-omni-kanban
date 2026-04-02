@@ -26,9 +26,10 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 
 from retry_utils import with_retry
+
 
 API_ROOT = "https://api.buildkite.com/v2"
 DEFAULT_ORG = "vllm"
