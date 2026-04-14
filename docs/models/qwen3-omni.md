@@ -34,7 +34,7 @@ This page focuses on historical Qwen3 Omni nightly performance by full test conf
 
 <div class="omni-section">
   <div class="omni-section__header">
-    <p>Rows are grouped by test configuration and ordered newest to oldest within each group.</p>
+    <p>Rows are grouped by run date (newest date first; expand/collapse each day). Within a day, newest run first.</p>
   </div>
   <div data-omni-history-table></div>
 </div>

@@ -1,3 +1,8 @@
+---
+hide:
+  - toc
+---
+
 # vLLM-Omni Kanban
 
 <div data-dashboard-home hidden></div>

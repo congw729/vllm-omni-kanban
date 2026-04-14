@@ -1,8 +1,14 @@
 """Copy perf JSON artifacts from buildkite_nightly_raw into data/results/<model_name>.
 
-Recursively scans data/buildkite_nightly_raw for result_test_*.json whose path contains
-the given --model-keywords substring. When the same basename appears under multiple
-build directories, keeps the file from the highest numeric build id (ties broken by mtime).
+Recursively scans data/buildkite_nightly_raw for result_test_*.json and benchmark_results_*.json where either the
+file path (POSIX) or the basename contains the given --model-keywords substring (so
+e.g. qwen3_tts matches .../result_test_qwen3_tts_* even when the parent path only
+mentions qwen3_omni).
+
+Each file is copied to data/results/<model_name>/<build_id>/<basename>, where <build_id> is the first
+path segment under buildkite_nightly_raw (Buildkite build number). Files not under a numeric build folder
+use subdirectory _nogroup. This preserves history when the same basename appears in multiple builds
+(previous versions deduplicated by basename and only kept the highest build, which dropped older runs).
 """
 
 from __future__ import annotations
@@ -49,28 +55,19 @@ def iter_source_files(raw_root: Path, model_keywords: str) -> list[Path]:
         return []
     needle = model_keywords
     out: list[Path] = []
-    for path in raw_root.rglob("result_test_*.json"):
-        if needle not in path.as_posix():
-            continue
-        if path.is_file():
-            out.append(path)
+    for pattern in ("result_test_*.json", "benchmark_results_*.json"):
+        for path in raw_root.rglob(pattern):
+            if needle not in path.as_posix() and needle not in path.name:
+                continue
+            if path.is_file():
+                out.append(path)
     return out
 
 
-def pick_winners(paths: list[Path], raw_root: Path) -> dict[str, Path]:
-    """Map basename -> chosen source path."""
-    by_name: dict[str, list[Path]] = {}
-    for path in paths:
-        by_name.setdefault(path.name, []).append(path)
-
-    winners: dict[str, Path] = {}
-    for name, candidates in by_name.items():
-
-        def sort_key(p: Path) -> tuple[int, float]:
-            return (build_id_from_path(p, raw_root), p.stat().st_mtime)
-
-        winners[name] = max(candidates, key=sort_key)
-    return winners
+def dest_subdir_for_source(path: Path, raw_root: Path) -> str:
+    """Subdirectory name under data/results/<model_name>/ (numeric build id or _nogroup)."""
+    bid = build_id_from_path(path, raw_root)
+    return str(bid) if bid >= 0 else "_nogroup"
 
 
 def sync_files(
@@ -82,20 +79,21 @@ def sync_files(
     move: bool,
     verbose: bool,
 ) -> int:
-    sources = iter_source_files(raw_root, model_keywords)
-    winners = pick_winners(sources, raw_root)
+    sources = sorted(iter_source_files(raw_root, model_keywords))
     if not dry_run:
         dest_dir.mkdir(parents=True, exist_ok=True)
 
     copied = 0
-    for basename, src in sorted(winners.items()):
-        dst = dest_dir / basename
+    for src in sources:
+        sub = dest_subdir_for_source(src, raw_root)
+        dst = dest_dir / sub / src.name
         if dry_run:
             if verbose:
                 print(f"would {'move' if move else 'copy'} {src} -> {dst}")
             copied += 1
             continue
 
+        dst.parent.mkdir(parents=True, exist_ok=True)
         if move:
             if dst.exists():
                 dst.unlink()
@@ -122,7 +120,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--model-keywords",
         required=True,
-        help="Substring that must appear in the source file path (POSIX-style, e.g. qwen3_omni).",
+        help="Substring that must appear in the source path (POSIX) or in the filename (e.g. qwen3_omni, qwen3_tts).",
     )
     parser.add_argument(
         "--raw-root",

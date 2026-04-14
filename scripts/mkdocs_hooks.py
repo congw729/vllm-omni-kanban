@@ -10,9 +10,11 @@ import subprocess
 import sys
 from pathlib import Path
 
-# (model_name subdirectory under data/results/, path substring for matching under buildkite_nightly_raw)
+# (model_name subdirectory under data/results/, keyword matching path or basename under buildkite_nightly_raw)
 _BUILDKITE_RAW_SYNCS: tuple[tuple[str, str], ...] = (
     ("qwen3omni", "qwen3_omni"),
+    ("qwen3tts", "qwen3_tts"),
+    ("qwen_image", "qwen_image"),
 )
 
 

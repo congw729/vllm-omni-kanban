@@ -1,6 +1,9 @@
 const charts = new Map();
 let resizeBound = false;
 
+/** Metric groups in the main trend grid before "More charts" (through E2EL + Audio RTF). */
+const OMNI_HISTORY_PRIMARY_CHART_COUNT = 7;
+
 function isDashboardHome() {
   return Boolean(document.querySelector("[data-dashboard-home]"));
 }
@@ -28,6 +31,94 @@ function chartPalette() {
     tooltipBorder: styles.getPropertyValue("--dashboard-tooltip-border").trim() || "rgba(148, 163, 184, 0.24)",
     tooltipText: styles.getPropertyValue("--dashboard-tooltip-text").trim() || "#f8fafc",
   };
+}
+
+/** Baseline markLine / label colors — neutral vs. data series; theme-aware via dashboard.css */
+function omniBaselineChrome() {
+  const styles = getComputedStyle(document.body);
+  return {
+    line: styles.getPropertyValue("--omni-baseline-line").trim() || "#64748b",
+    labelBg: styles.getPropertyValue("--omni-baseline-label-bg").trim() || "rgba(241, 245, 249, 0.96)",
+    labelFg: styles.getPropertyValue("--omni-baseline-label-fg").trim() || "#0f172a",
+    labelBorder: styles.getPropertyValue("--omni-baseline-label-border").trim() || "rgba(100, 116, 139, 0.45)",
+  };
+}
+
+/** ECharts default categorical palette — must match per-series assignment so legend / line / symbol stay aligned. */
+const OMNI_LINE_SERIES_PALETTE = [
+  "#5470c6",
+  "#91cc75",
+  "#fac858",
+  "#ee6666",
+  "#73c0de",
+  "#3ba272",
+  "#fc8452",
+  "#9a60b4",
+  "#ea7ccc",
+];
+
+/**
+ * Data lines use palette; baseline uses neutral slate (see omniBaselineChrome) for contrast.
+ */
+function applyOmniLineSeriesColors(seriesList) {
+  const bl = omniBaselineChrome();
+  seriesList.forEach((s, i) => {
+    const c = OMNI_LINE_SERIES_PALETTE[i % OMNI_LINE_SERIES_PALETTE.length];
+    s.color = c;
+    s.lineStyle = { width: 2.5, ...(s.lineStyle || {}), color: c };
+    s.itemStyle = { ...(s.itemStyle || {}), color: c };
+    s.emphasis = {
+      focus: "series",
+      blurScope: "coordinateSystem",
+      scale: false,
+      ...(s.emphasis || {}),
+      lineStyle: { ...(s.emphasis?.lineStyle || {}), color: c, width: 3 },
+      itemStyle: { ...(s.emphasis?.itemStyle || {}), color: c },
+    };
+    s.blur = {
+      lineStyle: { opacity: 0, width: 1 },
+      itemStyle: { opacity: 0 },
+    };
+    if (s.markLine) {
+      const ml = s.markLine;
+      const labelFmt = ml.label?.formatter;
+      // Series-level clip also affects markLine graphics in ECharts; disable so the label pill is not cropped.
+      s.clip = false;
+      s.markLine = {
+        ...ml,
+        // Avoid grid clipPath cutting off the baseline label at the right edge (see ECharts markLine + label).
+        clip: false,
+        lineStyle: {
+          type: "dashed",
+          width: 2,
+          ...(ml.lineStyle || {}),
+          color: bl.line,
+          opacity: 0,
+        },
+        label: {
+          ...(ml.label || {}),
+          show: false,
+          position: "end",
+          // Pull left from the plot edge so the full pill (incl. border) stays inside the canvas.
+          distance: [-22, 2 + i * 14],
+          color: bl.labelFg,
+          backgroundColor: bl.labelBg,
+          borderColor: bl.labelBorder,
+          borderWidth: 1,
+          borderRadius: 4,
+          padding: [6, 12],
+          fontSize: 11,
+          fontWeight: 600,
+          // Default truncate can hide digits; keep full "baseline …" string visible inside the pill.
+          overflow: "none",
+          // confine:true was squeezing/clipping the box; rely on grid.right + distance instead.
+          confine: false,
+          formatter: labelFmt,
+        },
+      };
+    }
+  });
+  return seriesList;
 }
 
 function patchAxis(axis, colors) {
@@ -446,12 +537,25 @@ function formatMetricValue(value, digits = 4) {
   return isNumeric(value) ? value.toFixed(digits) : "--";
 }
 
+/** Relative delta vs baseline for tooltip (e.g. latency higher = positive %). */
+function formatBaselineDeltaPct(value, baseline) {
+  if (!isNumeric(value) || !isNumeric(baseline) || baseline === 0) {
+    return null;
+  }
+  const pct = ((value - baseline) / baseline) * 100;
+  const sign = pct >= 0 ? "+" : "";
+  return `${sign}${pct.toFixed(2)}%`;
+}
+
 function formatTableValue(field, value) {
   if (field === "model_id" || field === "tokenizer_id") {
     return escapeHtml(String(value || "--"));
   }
+  if (typeof value === "boolean") {
+    return value ? "true" : "false";
+  }
   if (isNumeric(value)) {
-    return value.toFixed(4);
+    return Number.isInteger(value) ? String(value) : value.toFixed(4);
   }
   if (value === null || value === undefined || value === "") {
     return "--";
@@ -467,12 +571,38 @@ function humanizeToken(value) {
     itl: "ITL",
     e2el: "E2EL",
     rtf: "RTF",
+    qps: "QPS",
   };
   return mapping[value.toLowerCase()] || `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
 }
 
+/** P50 / P99 / Mean label for stage_*_QwenImagePipeline_* fields (shown at end of title). */
+function humanizeStageStatToken(stat) {
+  const s = String(stat).toLowerCase();
+  if (s === "mean") {
+    return "Mean";
+  }
+  if (s === "p50") {
+    return "P50";
+  }
+  if (s === "p99") {
+    return "P99";
+  }
+  return humanizeToken(stat);
+}
+
 function humanizeField(field) {
-  return field
+  const qwenStage = field.match(/^stage_(mean|p50|p99)_QwenImagePipeline_(.+)$/i);
+  if (qwenStage) {
+    const stageLabel = qwenStage[2]
+      .split("_")
+      .map((part) => humanizeToken(part))
+      .join(" ");
+    const statLabel = humanizeStageStatToken(qwenStage[1]);
+    return `${stageLabel} ${statLabel}`;
+  }
+  const rest = field.startsWith("serve_args_") ? field.slice("serve_args_".length) : field;
+  return rest
     .split("_")
     .map((part) => humanizeToken(part))
     .join(" ");
@@ -481,10 +611,81 @@ function humanizeField(field) {
 function disposeChartsWithin(root) {
   [...charts.entries()].forEach(([container, chart]) => {
     if (root.contains(container)) {
+      if (typeof chart.__omniBaselineDispose === "function") {
+        chart.__omniBaselineDispose();
+        chart.__omniBaselineDispose = null;
+      }
       chart.dispose();
       charts.delete(container);
     }
   });
+}
+
+function omniOptionHasMarkLineSeries(option) {
+  const s = option?.series;
+  return Array.isArray(s) && s.some((x) => x?.markLine);
+}
+
+/** ECharts does not drive markLine emphasis from parent line series; toggle opacity by events instead. */
+function omniSetMarkLineVisibility(chart, activeSeriesIndex) {
+  const opt = chart.getOption();
+  const list = opt.series;
+  if (!Array.isArray(list) || list.length === 0) {
+    return;
+  }
+  chart.setOption(
+    {
+      series: list.map((s, i) => {
+        if (!s?.markLine) {
+          return {};
+        }
+        const show = activeSeriesIndex >= 0 && i === activeSeriesIndex;
+        const ml = s.markLine;
+        const prevLs = ml.lineStyle && typeof ml.lineStyle === "object" && !Array.isArray(ml.lineStyle) ? ml.lineStyle : {};
+        const prevLb = ml.label && typeof ml.label === "object" && !Array.isArray(ml.label) ? ml.label : {};
+        return {
+          markLine: {
+            lineStyle: {
+              ...prevLs,
+              opacity: show ? 1 : 0,
+            },
+            label: {
+              ...prevLb,
+              show,
+            },
+          },
+        };
+      }),
+    },
+    false,
+  );
+}
+
+function wireOmniBaselineHover(chart) {
+  if (typeof chart.__omniBaselineDispose === "function") {
+    chart.__omniBaselineDispose();
+    chart.__omniBaselineDispose = null;
+  }
+  const onOver = (params) => {
+    let idx = -1;
+    if (params.componentType === "series" && params.seriesType === "line") {
+      idx = params.seriesIndex;
+    } else if (params.componentType === "markLine") {
+      idx = params.seriesIndex;
+    }
+    if (idx >= 0) {
+      omniSetMarkLineVisibility(chart, idx);
+    }
+  };
+  const onOut = () => {
+    omniSetMarkLineVisibility(chart, -1);
+  };
+  chart.on("mouseover", onOver);
+  chart.on("globalout", onOut);
+  chart.__omniBaselineDispose = () => {
+    chart.off("mouseover", onOver);
+    chart.off("globalout", onOut);
+  };
 }
 
 function setChart(container, option) {
@@ -492,17 +693,93 @@ function setChart(container, option) {
     return;
   }
   const chart = charts.get(container) || echarts.init(container);
+  if (typeof chart.__omniBaselineDispose === "function") {
+    chart.__omniBaselineDispose();
+    chart.__omniBaselineDispose = null;
+  }
   chart.setOption(applyTheme(option), true);
   charts.set(container, chart);
+  if (omniOptionHasMarkLineSeries(option)) {
+    wireOmniBaselineHover(chart);
+  }
 }
 
-function buildSeriesLabel(record) {
-  return [
-    record.test_name,
-    record.dataset_name || "dataset:n/a",
-    `mc=${record.max_concurrency}`,
-    `np=${record.num_prompts}`,
-  ].join(" · ");
+/** Strip CI-style test_ / model-repo prefixes for shorter legend text. */
+function abbreviateTestName(raw) {
+  if (typeof raw !== "string" || !raw) {
+    return "";
+  }
+  return raw
+    .replace(/^test_qwen_image_/, "")
+    .replace(/^test_qwen3_omni_/, "")
+    .replace(/^test_qwen3_tts_/, "")
+    .replace(/^test_/, "");
+}
+
+function shortRepoPath(raw) {
+  if (typeof raw !== "string" || !raw) {
+    return "";
+  }
+  const i = raw.lastIndexOf("/");
+  return i >= 0 ? raw.slice(i + 1) : raw;
+}
+
+/** Shown in trend legend; grouping keys still use full `group_fields` from payload. */
+const OMNI_LEGEND_SKIP_FIELDS = new Set(["backend", "model_id", "tokenizer_id", "endpoint_type"]);
+
+function formatGroupFieldForLegend(field, record) {
+  const v = record[field];
+  if (v === null || v === undefined || v === "") {
+    return "";
+  }
+  switch (field) {
+    case "test_name":
+      return abbreviateTestName(String(v)) || String(v);
+    case "model_id":
+    case "tokenizer_id":
+      return shortRepoPath(String(v));
+    case "max_concurrency":
+      return `c${v}`;
+    case "num_prompts":
+      return `p${v}`;
+    default:
+      return String(v);
+  }
+}
+
+function truncateLegendLabel(text, maxLen) {
+  const t = String(text || "").trim();
+  if (t.length <= maxLen) {
+    return t;
+  }
+  return `${t.slice(0, Math.max(0, maxLen - 1))}…`;
+}
+
+/**
+ * Short legend: `group_fields` order, skipping backend / model / tokenizer / endpoint_type.
+ */
+function buildSeriesLabel(record, groupFields) {
+  const gf = Array.isArray(groupFields) ? groupFields : [];
+  const parts = [];
+  for (const field of gf) {
+    if (OMNI_LEGEND_SKIP_FIELDS.has(field)) {
+      continue;
+    }
+    const piece = formatGroupFieldForLegend(field, record);
+    if (piece) {
+      parts.push(piece);
+    }
+  }
+  let label = parts.length > 0 ? parts.join(" · ") : "";
+  if (!label) {
+    label = [
+      record.test_name,
+      record.dataset_name || "dataset:n/a",
+      `mc=${record.max_concurrency}`,
+      `np=${record.num_prompts}`,
+    ].join(" · ");
+  }
+  return truncateLegendLabel(label, 72);
 }
 
 function filterRecords(records, filters) {
@@ -522,6 +799,80 @@ function filterRecords(records, filters) {
   }));
 }
 
+/** Newest run first (for summary, table, and consistent “latest” semantics). */
+function sortRecordsByTimeDesc(records) {
+  return [...records].sort((a, b) => {
+    const ta = a.sort_timestamp || "";
+    const tb = b.sort_timestamp || "";
+    return tb.localeCompare(ta);
+  });
+}
+
+function recordCalendarDay(record) {
+  const ts = record.sort_timestamp;
+  if (typeof ts === "string" && ts.length >= 10) {
+    return ts.slice(0, 10);
+  }
+  const d = record.date;
+  if (typeof d === "string" && d.length >= 10) {
+    return d.slice(0, 10);
+  }
+  return "";
+}
+
+/** Group by calendar day (YYYY-MM-DD), days newest-first; within each day, newest run first. */
+function groupRecordsByCalendarDay(records) {
+  const buckets = new Map();
+  records.forEach((record) => {
+    const day = recordCalendarDay(record) || "Unknown date";
+    if (!buckets.has(day)) {
+      buckets.set(day, []);
+    }
+    buckets.get(day).push(record);
+  });
+  buckets.forEach((items) => {
+    items.sort((a, b) => {
+      const ta = a.sort_timestamp || "";
+      const tb = b.sort_timestamp || "";
+      return tb.localeCompare(ta);
+    });
+  });
+  const keys = [...buckets.keys()];
+  const known = keys.filter((k) => k !== "Unknown date").sort((a, b) => b.localeCompare(a));
+  const ordered = buckets.has("Unknown date") ? [...known, "Unknown date"] : known;
+  return ordered.map((day) => ({ day, records: buckets.get(day) }));
+}
+
+/** YYYY-MM-DD for omnibus trend charts (hide time-of-day on axis / tooltip). */
+function formatOmniHistoryChartDate(value) {
+  if (value == null || value === "") {
+    return "";
+  }
+  if (typeof value === "number" && !Number.isNaN(value)) {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) {
+      return "";
+    }
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const da = String(d.getDate()).padStart(2, "0");
+    return `${y}-${mo}-${da}`;
+  }
+  const s = String(value);
+  const head = s.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (head) {
+    return head[1];
+  }
+  const parsed = new Date(s);
+  if (Number.isNaN(parsed.getTime())) {
+    return s;
+  }
+  const y = parsed.getFullYear();
+  const mo = String(parsed.getMonth() + 1).padStart(2, "0");
+  const da = String(parsed.getDate()).padStart(2, "0");
+  return `${y}-${mo}-${da}`;
+}
+
 function groupRecords(records, fields) {
   const grouped = new Map();
   records.forEach((record) => {
@@ -534,53 +885,129 @@ function groupRecords(records, fields) {
   return grouped;
 }
 
-function buildOmniMetricSeries(records, metric, groupFields) {
+/** One row per calendar day, keeping the latest run (by sort_timestamp). */
+function pickLatestPerCalendarDay(rows) {
+  const byDay = new Map();
+  rows.forEach((item) => {
+    const day = recordCalendarDay(item);
+    if (!day) {
+      return;
+    }
+    const prev = byDay.get(day);
+    if (!prev || String(item.sort_timestamp || "") > String(prev.sort_timestamp || "")) {
+      byDay.set(day, item);
+    }
+  });
+  return Array.from(byDay.values());
+}
+
+/** Baseline from payload (`baseline_<metric>`), constant per config group. */
+function baselineValueForMetric(items, metric) {
+  const key = `baseline_${metric}`;
+  for (const item of items) {
+    if (isNumeric(item[key])) {
+      return Number(item[key]);
+    }
+  }
+  return null;
+}
+
+function buildOmniMetricSeries(records, metric, groupFields, options) {
+  const pointPerDay = options?.pointPerDay !== false;
   const grouped = groupRecords(records, groupFields);
   const series = [];
   grouped.forEach((items) => {
-    const points = items
-      .filter((item) => isNumeric(item[metric]))
+    let rows = items.filter((item) => isNumeric(item[metric]));
+    if (pointPerDay) {
+      rows = pickLatestPerCalendarDay(rows);
+    }
+    const baseVal = baselineValueForMetric(items, metric);
+    const points = rows
       .sort((left, right) => left.sort_timestamp.localeCompare(right.sort_timestamp))
-      .map((item) => ({
-        value: [item.date, item[metric]],
-        meta: {
-          test_name: item.test_name,
-          dataset_name: item.dataset_name,
-          max_concurrency: item.max_concurrency,
-          num_prompts: item.num_prompts,
-          metric,
-          source_file: item.source_file,
-        },
-      }));
+      .map((item) => {
+        const day = recordCalendarDay(item);
+        // Use local midnight so dots sit on time-axis day ticks (ECharts places day ticks at 00:00).
+        const xVal = pointPerDay && day ? `${day}T00:00:00` : item.date;
+        return {
+          value: [xVal, item[metric]],
+          meta: {
+            test_name: item.test_name,
+            dataset_name: item.dataset_name,
+            max_concurrency: item.max_concurrency,
+            num_prompts: item.num_prompts,
+            metric,
+            source_file: item.source_file,
+            baseline: baseVal,
+          },
+        };
+      });
     if (points.length > 0) {
-      series.push({
-        name: `${buildSeriesLabel(items[0])} · ${humanizeField(metric)}`,
+      const lineSeries = {
+        name: buildSeriesLabel(items[0], groupFields),
         type: "line",
+        triggerLineEvent: true,
         showSymbol: points.length < 8,
         smooth: false,
         data: points,
-      });
+      };
+      if (baseVal !== null) {
+        lineSeries.markLine = {
+          silent: true,
+          symbol: ["none", "none"],
+          lineStyle: {
+            type: "dashed",
+            width: 2,
+            opacity: 0,
+          },
+          label: {
+            show: false,
+            position: "end",
+            formatter: () => `baseline ${formatMetricValue(baseVal)}`,
+          },
+          data: [{ yAxis: baseVal }],
+        };
+      }
+      series.push(lineSeries);
     }
   });
   return series;
 }
 
-function buildOmniChartOption(metricGroup, records, groupFields) {
-  const series = metricGroup.metrics.flatMap((metric) => buildOmniMetricSeries(records, metric, groupFields));
+function buildOmniChartOption(metricGroup, records, groupFields, chartPointPerDay) {
+  const opts = { pointPerDay: chartPointPerDay !== false };
+  const series = applyOmniLineSeriesColors(
+    metricGroup.metrics.flatMap((metric) => buildOmniMetricSeries(records, metric, groupFields, opts)),
+  );
+  const maxPoints = series.reduce((maxCount, s) => Math.max(maxCount, s.data?.length || 0), 0);
+  const hasBaseline = series.some((s) => s.markLine);
   return {
+    color: OMNI_LINE_SERIES_PALETTE,
+    animationDurationUpdate: 200,
     tooltip: {
       trigger: "item",
       formatter(params) {
         const meta = params.data?.meta || {};
-        return [
+        const val = params.data?.value?.[1];
+        const bl = meta.baseline;
+        const lines = [
           `<strong>${escapeHtml(params.seriesName || "")}</strong>`,
-          escapeHtml(String(params.data?.value?.[0] || "")),
-          `Value: ${formatMetricValue(params.data?.value?.[1])}`,
+          `Date: ${escapeHtml(formatOmniHistoryChartDate(params.data?.value?.[0]))}`,
+          `Value: ${formatMetricValue(val)}`,
+        ];
+        if (isNumeric(bl)) {
+          lines.push(`baseline: ${formatMetricValue(bl)}`);
+          const d = formatBaselineDeltaPct(val, bl);
+          if (d) {
+            lines.push(`vs baseline: ${escapeHtml(d)}`);
+          }
+        }
+        lines.push(
           `Test: ${escapeHtml(meta.test_name || "--")}`,
           `Dataset: ${escapeHtml(meta.dataset_name || "--")}`,
           `Max concurrency: ${escapeHtml(String(meta.max_concurrency ?? "--"))}`,
           `Num prompts: ${escapeHtml(String(meta.num_prompts ?? "--"))}`,
-        ].join("<br>");
+        );
+        return lines.join("<br>");
       },
     },
     legend: {
@@ -590,14 +1017,21 @@ function buildOmniChartOption(metricGroup, records, groupFields) {
     },
     grid: {
       left: 56,
-      right: 24,
+      right: hasBaseline ? 132 : 24,
       top: 60,
       bottom: 24,
       containLabel: true,
     },
     xAxis: {
       type: "time",
-      axisLabel: { show: false },
+      minInterval: 24 * 60 * 60 * 1000,
+      axisLabel: {
+        show: maxPoints > 0,
+        hideOverlap: true,
+        formatter(value) {
+          return formatOmniHistoryChartDate(value);
+        },
+      },
     },
     yAxis: {
       type: "value",
@@ -611,13 +1045,23 @@ function buildOmniChartOption(metricGroup, records, groupFields) {
   };
 }
 
-function renderOmniFilterBar(payload, filters) {
-  const container = document.querySelector("[data-omni-history-filters]");
+let _historyInstanceSeq = 0;
+
+function ensureHistoryInstanceId(root) {
+  if (!root.dataset.historyInstance) {
+    root.dataset.historyInstance = String(_historyInstanceSeq++);
+  }
+  return root.dataset.historyInstance;
+}
+
+function renderOmniFilterBar(payload, filters, root) {
+  const container = root.querySelector("[data-omni-history-filters]");
   if (!container) {
     return;
   }
+  const hid = ensureHistoryInstanceId(root);
   container.innerHTML = payload.filters.map((field) => {
-    const datalistId = `omni-filter-${field}`;
+    const datalistId = `omni-filter-${field}-${hid}`;
     const options = (payload.filter_options?.[field] || [])
       .map((option) => `<option value="${escapeHtml(String(option))}"></option>`)
       .join("");
@@ -641,19 +1085,19 @@ function renderOmniFilterBar(payload, filters) {
 
   container.querySelectorAll("[data-omni-filter]").forEach((input) => {
     input.addEventListener("input", () => {
-      renderQwen3OmniHistory(payload);
+      renderQwen3OmniHistory(payload, root);
     });
   });
   container.querySelector("[data-omni-filter-reset]")?.addEventListener("click", () => {
     container.querySelectorAll("[data-omni-filter]").forEach((input) => {
       input.value = "";
     });
-    renderQwen3OmniHistory(payload);
+    renderQwen3OmniHistory(payload, root);
   });
 }
 
-function currentOmniFilters(payload) {
-  const inputs = [...document.querySelectorAll("[data-omni-filter]")];
+function currentOmniFilters(payload, root) {
+  const inputs = [...root.querySelectorAll("[data-omni-filter]")];
   return payload.filters.reduce((acc, field) => {
     const input = inputs.find((item) => item.dataset.omniFilter === field);
     acc[field] = input?.value?.trim() || "";
@@ -661,8 +1105,8 @@ function currentOmniFilters(payload) {
   }, {});
 }
 
-function renderOmniSummary(records, groupFields) {
-  const container = document.querySelector("[data-omni-history-summary]");
+function renderOmniSummary(records, groupFields, root) {
+  const container = root.querySelector("[data-omni-history-summary]");
   if (!container) {
     return;
   }
@@ -684,8 +1128,8 @@ function renderOmniSummary(records, groupFields) {
   `;
 }
 
-function renderOmniTable(payload, records) {
-  const container = document.querySelector("[data-omni-history-table]");
+function renderOmniTable(payload, records, root) {
+  const container = root.querySelector("[data-omni-history-table]");
   if (!container) {
     return;
   }
@@ -697,7 +1141,8 @@ function renderOmniTable(payload, records) {
   const header = payload.table_columns
     .map((field) => `<th scope="col">${escapeHtml(humanizeField(field))}</th>`)
     .join("");
-  const body = records.map((record) => {
+
+  const buildTbody = (dayRecords) => dayRecords.map((record) => {
     const cells = payload.table_columns.map((field) => {
       const numericClass = isNumeric(record[field]) ? " omni-history-table__cell--numeric" : "";
       return `<td class="omni-history-table__cell${numericClass}">${formatTableValue(field, record[field])}</td>`;
@@ -705,39 +1150,30 @@ function renderOmniTable(payload, records) {
     return `<tr>${cells}</tr>`;
   }).join("");
 
-  container.innerHTML = `
-    <div class="omni-history-table__wrap">
-      <table class="omni-history-table">
-        <thead><tr>${header}</tr></thead>
-        <tbody>${body}</tbody>
-      </table>
-    </div>
-  `;
+  const dayGroups = groupRecordsByCalendarDay(records);
+  const blocks = dayGroups.map(({ day, records: dayRecords }, index) => `
+    <details class="omni-history-day"${index === 0 ? " open" : ""}>
+      <summary class="omni-history-day__summary">
+        <span class="omni-history-day__label">${escapeHtml(day)}</span>
+        <span class="omni-history-day__meta">${dayRecords.length} run${dayRecords.length === 1 ? "" : "s"}</span>
+      </summary>
+      <div class="omni-history-table__wrap">
+        <table class="omni-history-table">
+          <thead><tr>${header}</tr></thead>
+          <tbody>${buildTbody(dayRecords)}</tbody>
+        </table>
+      </div>
+    </details>
+  `).join("");
+
+  container.innerHTML = `<div class="omni-history-by-date">${blocks}</div>`;
 }
 
-function renderOmniSnapshot(metricGroup, records, groupFields) {
-  const seriesByMetric = metricGroup.metrics.flatMap((metric) => buildOmniMetricSeries(records, metric, groupFields));
-  const items = seriesByMetric
-    .map((series) => {
-      const point = series.data[series.data.length - 1];
-      return point ? `
-        <div class="omni-snapshot-card">
-          <span class="omni-snapshot-card__name">${escapeHtml(series.name)}</span>
-          <strong class="omni-snapshot-card__value">${formatMetricValue(point.value[1])}</strong>
-          <span class="omni-snapshot-card__meta">${escapeHtml(String(point.value[0]))}</span>
-        </div>
-      ` : "";
-    })
-    .filter(Boolean)
-    .join("");
-  return items || '<div class="omni-empty-state">当前分组没有可展示的数值。</div>';
-}
-
-function renderOmniChartSection(section, metricGroup, records, groupFields) {
+function renderOmniChartSection(section, metricGroup, records, groupFields, chartPointPerDay) {
+  const opts = { pointPerDay: chartPointPerDay !== false };
   const chartRoot = document.createElement("section");
   chartRoot.className = "omni-chart-card";
-  const allSeries = metricGroup.metrics.flatMap((metric) => buildOmniMetricSeries(records, metric, groupFields));
-  const pointCount = allSeries.reduce((maxCount, series) => Math.max(maxCount, series.data.length), 0);
+  const allSeries = metricGroup.metrics.flatMap((metric) => buildOmniMetricSeries(records, metric, groupFields, opts));
 
   chartRoot.innerHTML = `
     <div class="omni-chart-card__header">
@@ -758,38 +1194,30 @@ function renderOmniChartSection(section, metricGroup, records, groupFields) {
     return;
   }
 
-  if (pointCount < 2) {
-    const snapshot = document.createElement("div");
-    snapshot.className = "omni-snapshot-grid";
-    snapshot.innerHTML = renderOmniSnapshot(metricGroup, records, groupFields);
-    chartRoot.append(snapshot);
-    section.append(chartRoot);
-    return;
-  }
-
   const chart = document.createElement("div");
   chart.className = "chart-frame omni-chart-frame";
   chartRoot.append(chart);
   section.append(chartRoot);
-  setChart(chart, buildOmniChartOption(metricGroup, records, groupFields));
+  setChart(chart, buildOmniChartOption(metricGroup, records, groupFields, chartPointPerDay));
 }
 
-function renderOmniCharts(payload, records) {
-  const container = document.querySelector("[data-omni-history-charts]");
+function renderOmniCharts(payload, records, root) {
+  const container = root.querySelector("[data-omni-history-charts]");
   if (!container) {
     return;
   }
+  const chartPointPerDay = payload.chart_point_per_day !== false;
   disposeChartsWithin(container);
   container.innerHTML = "";
 
   const primary = document.createElement("div");
   primary.className = "omni-chart-grid";
   container.append(primary);
-  payload.metric_groups.slice(0, 5).forEach((metricGroup) => {
-    renderOmniChartSection(primary, metricGroup, records, payload.group_fields);
+  payload.metric_groups.slice(0, OMNI_HISTORY_PRIMARY_CHART_COUNT).forEach((metricGroup) => {
+    renderOmniChartSection(primary, metricGroup, records, payload.group_fields, chartPointPerDay);
   });
 
-  if (payload.metric_groups.length > 5) {
+  if (payload.metric_groups.length > OMNI_HISTORY_PRIMARY_CHART_COUNT) {
     const details = document.createElement("details");
     details.className = "omni-more-charts";
     details.innerHTML = '<summary>More charts</summary>';
@@ -802,8 +1230,8 @@ function renderOmniCharts(payload, records) {
       if (extraRendered) {
         return;
       }
-      payload.metric_groups.slice(3).forEach((metricGroup) => {
-        renderOmniChartSection(extra, metricGroup, records, payload.group_fields);
+      payload.metric_groups.slice(OMNI_HISTORY_PRIMARY_CHART_COUNT).forEach((metricGroup) => {
+        renderOmniChartSection(extra, metricGroup, records, payload.group_fields, chartPointPerDay);
       });
       extraRendered = true;
     };
@@ -815,27 +1243,34 @@ function renderOmniCharts(payload, records) {
   }
 }
 
-function renderQwen3OmniHistory(payload) {
-  const filters = currentOmniFilters(payload);
-  renderOmniFilterBar(payload, filters);
-  const filtered = filterRecords(payload.records, filters);
-  renderOmniSummary(filtered, payload.group_fields);
-  renderOmniCharts(payload, filtered);
-  renderOmniTable(payload, filtered);
+function renderQwen3OmniHistory(payload, root) {
+  const filters = currentOmniFilters(payload, root);
+  renderOmniFilterBar(payload, filters, root);
+  const filtered = sortRecordsByTimeDesc(filterRecords(payload.records, filters));
+  renderOmniSummary(filtered, payload.group_fields, root);
+  renderOmniCharts(payload, filtered, root);
+  renderOmniTable(payload, filtered, root);
 }
 
 async function loadQwen3OmniHistory() {
-  const root = document.querySelector("[data-omni-history-src]");
-  if (!root) {
+  const roots = document.querySelectorAll("[data-omni-history-src]");
+  if (!roots.length) {
     return;
   }
 
-  try {
-    const payload = await fetchJson(root.dataset.omniHistorySrc);
-    renderQwen3OmniHistory(payload);
-  } catch (error) {
-    root.innerHTML = `<div class="omni-empty-state">Failed to load Qwen3 Omni history: ${escapeHtml(error.message)}</div>`;
-  }
+  await Promise.all(
+    [...roots].map(async (root) => {
+      try {
+        const payload = await fetchJson(root.dataset.omniHistorySrc);
+        renderQwen3OmniHistory(payload, root);
+      } catch (error) {
+        const msg = document.createElement("div");
+        msg.className = "omni-empty-state";
+        msg.textContent = `Failed to load history: ${error.message}`;
+        root.prepend(msg);
+      }
+    }),
+  );
 }
 
 function bindRangePicker() {
