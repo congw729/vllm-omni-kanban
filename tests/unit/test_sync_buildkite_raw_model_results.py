@@ -39,10 +39,10 @@ def test_iter_source_files_filters_by_keywords(tmp_path: Path) -> None:
     assert found == [match]
 
 
-def test_iter_source_files_includes_benchmark_results_json(tmp_path: Path) -> None:
+def test_iter_source_files_includes_diffusion_result_json(tmp_path: Path) -> None:
     raw = tmp_path / "buildkite_nightly_raw"
     (raw / "1" / "perf").mkdir(parents=True)
-    match = raw / "1" / "perf" / "benchmark_results_test_qwen_image_20260101-120000.json"
+    match = raw / "1" / "perf" / "diffusion_result_test_qwen_image_20260101-120000.json"
     match.write_text("[]", encoding="utf-8")
     found = iter_source_files(raw, "qwen_image")
     assert found == [match]

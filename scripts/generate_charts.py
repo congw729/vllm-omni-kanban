@@ -5,7 +5,7 @@ import sys
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -21,9 +21,23 @@ CHARTS_DIR = ROOT / "docs" / "assets" / "charts"
 QWEN3_OMNI_HISTORY_PATH = CHARTS_DIR / "qwen3_omni_history.json"
 QWEN3_TTS_HISTORY_PATH = CHARTS_DIR / "qwen3_tts_history.json"
 QWEN_IMAGE_HISTORY_PATH = CHARTS_DIR / "qwen_image_history.json"
+QWEN_IMAGE_EDIT_HISTORY_PATH = CHARTS_DIR / "qwen_image_edit_history.json"
+QWEN_IMAGE_EDIT_2509_HISTORY_PATH = CHARTS_DIR / "qwen_image_edit_2509_history.json"
 DEFAULT_RESULT_DATASETS = frozenset({"random", "random-mm"})
 QWEN3_OMNI_DATASETS = set(DEFAULT_RESULT_DATASETS)  # backward compat
 QWEN3_OMNI_GROUP_FIELDS = (
+    "endpoint_type",
+    "backend",
+    "model_id",
+    "tokenizer_id",
+    "test_name",
+    "dataset_name",
+    "random_input_len",
+    "random_output_len",
+    "max_concurrency",
+    "num_prompts",
+)
+QWEN3_TTS_GROUP_FIELDS = (
     "endpoint_type",
     "backend",
     "model_id",
@@ -62,6 +76,10 @@ MODEL_METRICS = {
         ("peak_memory_gb", None, None),
     ],
     "Qwen-Image-edit": [
+        ("e2e_latency_ms", None, None),
+        ("peak_memory_gb", None, None),
+    ],
+    "Qwen-Image-edit-2509": [
         ("e2e_latency_ms", None, None),
         ("peak_memory_gb", None, None),
     ],
@@ -185,16 +203,19 @@ def load_result_test_history(
                     record[f"baseline_{bk}"] = float(bv)
         records.append(record)
 
+    def _group_sort_key(item: dict[str, Any]) -> tuple[Any, ...]:
+        return tuple("" if item.get(field) is None else str(item.get(field)) for field in QWEN3_OMNI_GROUP_FIELDS)
+
     records.sort(
         key=lambda item: (
-            tuple(item.get(field) for field in QWEN3_OMNI_GROUP_FIELDS),
+            _group_sort_key(item),
             item["sort_timestamp"],
         ),
         reverse=False,
     )
     grouped: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
     for record in records:
-        key = tuple(record.get(field) for field in QWEN3_OMNI_GROUP_FIELDS)
+        key = _group_sort_key(record)
         grouped.setdefault(key, []).append(record)
 
     ordered_records: list[dict[str, Any]] = []
@@ -227,11 +248,14 @@ def _serialize_serve_arg_value(value: Any) -> Any:
 
 
 def load_qwen_image_benchmark_history(source_dir: Path) -> list[dict[str, Any]]:
-    """Load CI perf arrays written as benchmark_results_*.json (Qwen Image diffusion bench)."""
+    """Load CI perf arrays from diffusion_* / benchmark_results_*.json (Qwen Image diffusion bench)."""
     raw_rows: list[tuple[dict[str, Any], dict[str, Any], dict[str, Any]]] = []
     stage_keys: set[str] = set()
     serve_arg_keys: set[str] = set()
-    for path in sorted(source_dir.rglob("benchmark_results_*.json")):
+    bench_paths: set[Path] = set()
+    for pattern in ("diffusion_result_*.json", "benchmark_results_*.json"):
+        bench_paths.update(source_dir.rglob(pattern))
+    for path in sorted(bench_paths, key=lambda p: str(p)):
         data = load_json(path, [])
         if not isinstance(data, list):
             continue
@@ -356,7 +380,7 @@ def _history_payload_from_records(
         groups.setdefault(key, []).append(record)
 
     grouped_payload = []
-    for key in sorted(groups):
+    for key in sorted(groups, key=lambda k: tuple("" if v is None else str(v) for v in k)):
         items = sorted(groups[key], key=lambda item: item["sort_timestamp"], reverse=True)
         grouped_payload.append(
             {
@@ -418,29 +442,57 @@ def build_qwen3_omni_history_payload(config: dict[str, Any], source_dir: Path) -
 
 def build_qwen3_tts_history_payload(config: dict[str, Any], source_dir: Path) -> dict[str, Any]:
     display = config.get("models", {}).get("Qwen3-TTS", {}).get("display_name", "Qwen3 TTS")
-    return build_result_test_history_payload(config, source_dir, "qwen3_tts_history", display)
+    page_config = config.get("kanban_pages", {}).get("qwen3_tts_history", {})
+    ds_names = page_config.get("dataset_names", ["random", "random-mm"])
+    dataset_allowlist = frozenset(ds_names)
+    records = load_result_test_history(source_dir, dataset_allowlist) if source_dir.is_dir() else []
+    return _history_payload_from_records(config, source_dir, "qwen3_tts_history", display, QWEN3_TTS_GROUP_FIELDS, records)
 
 
-def build_qwen_image_history_payload(config: dict[str, Any], source_dir: Path) -> dict[str, Any]:
-    display = config.get("models", {}).get("Qwen-image", {}).get("display_name", "Qwen Image")
+def build_qwen_image_family_history_payload(
+    config: dict[str, Any],
+    source_dir: Path,
+    *,
+    page_key: str,
+    model_key: str,
+    fallback_display: str,
+    test_name_filter: Callable[[str], bool] | None = None,
+) -> dict[str, Any]:
+    display = config.get("models", {}).get(model_key, {}).get("display_name", fallback_display)
     records = load_qwen_image_benchmark_history(source_dir) if source_dir.is_dir() else []
-    payload = _history_payload_from_records(config, source_dir, "qwen_image_history", display, QWEN_IMAGE_GROUP_FIELDS, records)
-    page_config = config.get("kanban_pages", {}).get("qwen_image_history", {})
+    if test_name_filter is not None:
+        records = [r for r in records if test_name_filter(str(r.get("test_name") or ""))]
+    payload = _history_payload_from_records(config, source_dir, page_key, display, QWEN_IMAGE_GROUP_FIELDS, records)
+    page_config = config.get("kanban_pages", {}).get(page_key, {})
     legacy_stage_json = frozenset({"stage_durations_mean", "stage_durations_p50", "stage_durations_p99"})
     base = [c for c in page_config.get("table_columns", []) if c not in legacy_stage_json]
     serve_cols = sorted({k for r in records for k in r if k.startswith("serve_args_")})
     if "model_id" in base and serve_cols:
         idx_m = base.index("model_id") + 1
         base = base[:idx_m] + serve_cols + base[idx_m:]
-    slugs: list[str] = []
-    if records:
-        for k in records[0]:
-            if k.startswith("stage_mean_"):
-                slugs.append(k[len("stage_mean_") :])
-        slugs = sorted(set(slugs))
     dynamic: list[str] = []
-    for slug in slugs:
-        dynamic.extend([f"stage_mean_{slug}", f"stage_p50_{slug}", f"stage_p99_{slug}"])
+    if page_config.get("include_stage_columns", True):
+        stage_slug_set: set[str] = set()
+        for rec in records:
+            for k in rec:
+                if k.startswith("stage_mean_"):
+                    stage_slug_set.add(k[len("stage_mean_") :])
+        slugs: list[str] = sorted(stage_slug_set)
+        # qwen-image-edit page: keep one pipeline family to avoid duplicate display labels after prefix trimming.
+        if page_key == "qwen_image_edit_history":
+            preferred = [s for s in slugs if "QwenImageEditPipeline_" in s]
+            slugs = preferred or [s for s in slugs if "QwenImageEditPlusPipeline_" not in s]
+        elif page_key == "qwen_image_edit_2509_history":
+            preferred = [s for s in slugs if "QwenImageEditPlusPipeline_" in s]
+            slugs = preferred or [s for s in slugs if "QwenImageEditPipeline_" not in s]
+        if page_config.get("p99_stage_columns_last", False):
+            for slug in slugs:
+                dynamic.extend([f"stage_mean_{slug}", f"stage_p50_{slug}"])
+            for slug in slugs:
+                dynamic.append(f"stage_p99_{slug}")
+        else:
+            for slug in slugs:
+                dynamic.extend([f"stage_mean_{slug}", f"stage_p50_{slug}", f"stage_p99_{slug}"])
     anchor = "peak_memory_mb_max"
     if anchor in base:
         idx = base.index(anchor) + 1
@@ -448,6 +500,39 @@ def build_qwen_image_history_payload(config: dict[str, Any], source_dir: Path) -
     else:
         payload["table_columns"] = base + dynamic
     return payload
+
+
+def build_qwen_image_history_payload(config: dict[str, Any], source_dir: Path) -> dict[str, Any]:
+    return build_qwen_image_family_history_payload(
+        config,
+        source_dir,
+        page_key="qwen_image_history",
+        model_key="Qwen-image",
+        fallback_display="Qwen Image",
+        test_name_filter=lambda name: "qwen_image_edit" not in name and "qwen_image" in name,
+    )
+
+
+def build_qwen_image_edit_history_payload(config: dict[str, Any], source_dir: Path) -> dict[str, Any]:
+    return build_qwen_image_family_history_payload(
+        config,
+        source_dir,
+        page_key="qwen_image_edit_history",
+        model_key="Qwen-Image-edit",
+        fallback_display="Qwen Image Edit",
+        test_name_filter=lambda name: "qwen_image_edit_2509" not in name and "qwen_image_edit" in name,
+    )
+
+
+def build_qwen_image_edit_2509_history_payload(config: dict[str, Any], source_dir: Path) -> dict[str, Any]:
+    return build_qwen_image_family_history_payload(
+        config,
+        source_dir,
+        page_key="qwen_image_edit_2509_history",
+        model_key="Qwen-Image-edit-2509",
+        fallback_display="Qwen Image Edit 2509",
+        test_name_filter=lambda name: "qwen_image_edit_2509" in name,
+    )
 
 
 def build_multi_series_chart(
@@ -591,6 +676,10 @@ def main() -> int:
     save_json(QWEN3_TTS_HISTORY_PATH, build_qwen3_tts_history_payload(config, qwen3_tts_source_dir))
     qwen_image_source_dir = RESULTS_DIR / config.get("kanban_pages", {}).get("qwen_image_history", {}).get("source_dir", "qwen_image")
     save_json(QWEN_IMAGE_HISTORY_PATH, build_qwen_image_history_payload(config, qwen_image_source_dir))
+    qwen_image_edit_source_dir = RESULTS_DIR / config.get("kanban_pages", {}).get("qwen_image_edit_history", {}).get("source_dir", "qwen_image_edit")
+    save_json(QWEN_IMAGE_EDIT_HISTORY_PATH, build_qwen_image_edit_history_payload(config, qwen_image_edit_source_dir))
+    qwen_image_edit_2509_source_dir = RESULTS_DIR / config.get("kanban_pages", {}).get("qwen_image_edit_2509_history", {}).get("source_dir", "qwen_image_edit_2509")
+    save_json(QWEN_IMAGE_EDIT_2509_HISTORY_PATH, build_qwen_image_edit_2509_history_payload(config, qwen_image_edit_2509_source_dir))
     for model, model_config in config.get("models", {}).items():
         available_metrics = set(model_config["metrics"]["required"]) | set(model_config["metrics"]["optional"])
         for metric, y_min, y_max in MODEL_METRICS.get(model, []):

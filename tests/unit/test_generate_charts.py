@@ -100,7 +100,7 @@ def test_qwen_image_benchmark_baseline_mapped_to_record_fields(tmp_path: Path) -
             },
         }
     ]
-    (source_dir / "benchmark_results_x.json").write_text(json.dumps(row), encoding="utf-8")
+    (source_dir / "diffusion_result_x.json").write_text(json.dumps(row), encoding="utf-8")
     records = load_qwen_image_benchmark_history(source_dir)
     assert len(records) == 1
     r0 = records[0]
@@ -150,6 +150,8 @@ def test_output_files_created(repo_root: Path) -> None:
     assert (repo_root / "docs" / "assets" / "charts" / "qwen3_omni_history.json").exists()
     assert (repo_root / "docs" / "assets" / "charts" / "qwen3_tts_history.json").exists()
     assert (repo_root / "docs" / "assets" / "charts" / "qwen_image_history.json").exists()
+    assert (repo_root / "docs" / "assets" / "charts" / "qwen_image_edit_history.json").exists()
+    assert (repo_root / "docs" / "assets" / "charts" / "qwen_image_edit_2509_history.json").exists()
     assert (repo_root / "docs" / "assets" / "charts" / "qwen3_tts_real_time_factor_7d.json").exists()
     assert (repo_root / "docs" / "assets" / "charts" / "qwen_image_e2e_latency_ms_7d.json").exists()
     assert (repo_root / "docs" / "assets" / "charts" / "wan22_peak_memory_gb_7d.json").exists()

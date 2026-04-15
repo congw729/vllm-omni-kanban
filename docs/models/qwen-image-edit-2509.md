@@ -1,12 +1,12 @@
-# Qwen Image Edit
+# Qwen Image Edit 2509
 
 <p class="dashboard-intro">
-This page tracks Qwen Image Edit nightly benchmark runs: configurations, latency, throughput, and peak memory over time.
+This page tracks Qwen Image Edit 2509 nightly benchmark runs: configurations, latency, throughput, and peak memory over time.
 </p>
 
 <section
   class="omni-history-page"
-  data-omni-history-src="../../assets/charts/qwen_image_edit_history.json"
+  data-omni-history-src="../../assets/charts/qwen_image_edit_2509_history.json"
   markdown="1"
 >
 

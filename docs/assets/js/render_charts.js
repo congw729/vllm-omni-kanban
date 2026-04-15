@@ -592,12 +592,18 @@ function humanizeStageStatToken(stat) {
 }
 
 function humanizeField(field) {
-  const qwenStage = field.match(/^stage_(mean|p50|p99)_QwenImagePipeline_(.+)$/i);
+  const qwenStage = field.match(/^stage_(mean|p50|p99)_(.+)$/i);
   if (qwenStage) {
-    const stageLabel = qwenStage[2]
+    const rawStage = qwenStage[2]
+      .replace(/^QwenImageEditPlusPipeline_/i, "")
+      .replace(/^QwenImageEditPipeline_/i, "")
+      .replace(/^QwenImagePipeline_/i, "");
+    const stageParts = rawStage
       .split("_")
-      .map((part) => humanizeToken(part))
-      .join(" ");
+      .filter((part) => !/pipeline$/i.test(part))
+      .filter((part) => part)
+      .map((part) => humanizeToken(part));
+    const stageLabel = stageParts.join(" ");
     const statLabel = humanizeStageStatToken(qwenStage[1]);
     return `${stageLabel} ${statLabel}`;
   }
@@ -666,25 +672,28 @@ function wireOmniBaselineHover(chart) {
     chart.__omniBaselineDispose();
     chart.__omniBaselineDispose = null;
   }
-  const onOver = (params) => {
+  const showBySeriesIndex = (params) => {
     let idx = -1;
-    if (params.componentType === "series" && params.seriesType === "line") {
-      idx = params.seriesIndex;
-    } else if (params.componentType === "markLine") {
+    if (typeof params?.seriesIndex === "number") {
       idx = params.seriesIndex;
     }
     if (idx >= 0) {
       omniSetMarkLineVisibility(chart, idx);
     }
   };
-  const onOut = () => {
+  const onLeaveChart = () => {
     omniSetMarkLineVisibility(chart, -1);
   };
-  chart.on("mouseover", onOver);
-  chart.on("globalout", onOut);
+  // In some ECharts interaction paths only one of these events fires; listen to both.
+  // IMPORTANT: do not hide on `hideTip` (fires whenever cursor is not on a symbol),
+  // otherwise baseline disappears while still hovering the line itself.
+  chart.on("showTip", showBySeriesIndex);
+  chart.on("mouseover", showBySeriesIndex);
+  chart.on("globalout", onLeaveChart);
   chart.__omniBaselineDispose = () => {
-    chart.off("mouseover", onOver);
-    chart.off("globalout", onOut);
+    chart.off("showTip", showBySeriesIndex);
+    chart.off("mouseover", showBySeriesIndex);
+    chart.off("globalout", onLeaveChart);
   };
 }
 
@@ -742,6 +751,10 @@ function formatGroupFieldForLegend(field, record) {
       return `c${v}`;
     case "num_prompts":
       return `p${v}`;
+    case "random_input_len":
+      return `ri${v}`;
+    case "random_output_len":
+      return `ro${v}`;
     default:
       return String(v);
   }
@@ -775,6 +788,8 @@ function buildSeriesLabel(record, groupFields) {
     label = [
       record.test_name,
       record.dataset_name || "dataset:n/a",
+      `ri=${record.random_input_len ?? "--"}`,
+      `ro=${record.random_output_len ?? "--"}`,
       `mc=${record.max_concurrency}`,
       `np=${record.num_prompts}`,
     ].join(" · ");
@@ -904,10 +919,11 @@ function pickLatestPerCalendarDay(rows) {
 /** Baseline from payload (`baseline_<metric>`), constant per config group. */
 function baselineValueForMetric(items, metric) {
   const key = `baseline_${metric}`;
-  for (const item of items) {
-    if (isNumeric(item[key])) {
-      return Number(item[key]);
-    }
+  const latest = [...items].sort((a, b) =>
+    String(b.sort_timestamp || "").localeCompare(String(a.sort_timestamp || "")),
+  )[0];
+  if (latest && isNumeric(latest[key])) {
+    return Number(latest[key]);
   }
   return null;
 }
@@ -935,6 +951,8 @@ function buildOmniMetricSeries(records, metric, groupFields, options) {
             dataset_name: item.dataset_name,
             max_concurrency: item.max_concurrency,
             num_prompts: item.num_prompts,
+            random_input_len: item.random_input_len,
+            random_output_len: item.random_output_len,
             metric,
             source_file: item.source_file,
             baseline: baseVal,
@@ -975,64 +993,74 @@ function buildOmniMetricSeries(records, metric, groupFields, options) {
   return series;
 }
 
-/**
- * Axis tooltip lists every line at the hovered date; item-only mode is weak when many series overlap.
- * Symbols are always shown on lines (see `buildOmniMetricSeries`); axis trigger still reads well for comparison.
- */
-function formatOmniHistoryTooltipHtml(rawParams) {
-  const rows = Array.isArray(rawParams) ? rawParams : rawParams != null ? [rawParams] : [];
-  const lineRows = rows.filter(
-    (p) => p && p.componentType === "series" && p.seriesType === "line" && p.data,
-  );
-  if (lineRows.length === 0) {
+/** Single-point tooltip keeps hovered data semantics clear. */
+function formatOmniHistoryTooltipHtml(params) {
+  if (!params || !params.data) {
     return "";
   }
-  const axisVal =
-    lineRows[0].axisValue ?? lineRows[0].value?.[0] ?? lineRows[0].data?.value?.[0];
-  const header = `Date: ${escapeHtml(formatOmniHistoryChartDate(axisVal))}`;
-  const sections = lineRows.map((params) => {
-    const meta = params.data?.meta || {};
-    const val = params.data?.value?.[1];
-    const bl = meta.baseline;
-    const lines = [
-      `<strong>${escapeHtml(params.seriesName || "")}</strong>`,
-      `Value: ${formatMetricValue(val)}`,
-    ];
-    if (isNumeric(bl)) {
-      lines.push(`baseline: ${formatMetricValue(bl)}`);
-      const d = formatBaselineDeltaPct(val, bl);
-      if (d) {
-        lines.push(`vs baseline: ${escapeHtml(d)}`);
-      }
+  const meta = params.data?.meta || {};
+  const val = params.data?.value?.[1];
+  const bl = meta.baseline;
+  const lines = [
+    `<strong>${escapeHtml(params.seriesName || "")}</strong>`,
+    `Date: ${escapeHtml(formatOmniHistoryChartDate(params.data?.value?.[0]))}`,
+    `Value: ${formatMetricValue(val)}`,
+  ];
+  if (isNumeric(bl)) {
+    lines.push(`baseline: ${formatMetricValue(bl)}`);
+    const d = formatBaselineDeltaPct(val, bl);
+    if (d) {
+      lines.push(`vs baseline: ${escapeHtml(d)}`);
     }
-    lines.push(
-      `Test: ${escapeHtml(meta.test_name || "--")}`,
-      `Dataset: ${escapeHtml(meta.dataset_name || "--")}`,
-      `Max concurrency: ${escapeHtml(String(meta.max_concurrency ?? "--"))}`,
-      `Num prompts: ${escapeHtml(String(meta.num_prompts ?? "--"))}`,
-    );
-    return lines.join("<br>");
-  });
-  return [header, ...sections].join("<br><br>");
+  }
+  lines.push(
+    `Test: ${escapeHtml(meta.test_name || "--")}`,
+    `Dataset: ${escapeHtml(meta.dataset_name || "--")}`,
+    `Max concurrency: ${escapeHtml(String(meta.max_concurrency ?? "--"))}`,
+    `Num prompts: ${escapeHtml(String(meta.num_prompts ?? "--"))}`,
+    `Random input len: ${escapeHtml(String(meta.random_input_len ?? "--"))}`,
+    `Random output len: ${escapeHtml(String(meta.random_output_len ?? "--"))}`,
+  );
+  return lines.join("<br>");
 }
 
 function buildOmniChartOption(metricGroup, records, groupFields, chartPointPerDay) {
   const opts = { pointPerDay: chartPointPerDay !== false };
-  const pal = chartPalette();
   const series = applyOmniLineSeriesColors(
     metricGroup.metrics.flatMap((metric) => buildOmniMetricSeries(records, metric, groupFields, opts)),
   );
   const maxPoints = series.reduce((maxCount, s) => Math.max(maxCount, s.data?.length || 0), 0);
   const hasBaseline = series.some((s) => s.markLine);
+  const yValues = [];
+  const baselineValues = [];
+  series.forEach((s) => {
+    (s.data || []).forEach((p) => {
+      const y = p?.value?.[1];
+      if (isNumeric(y)) {
+        yValues.push(Number(y));
+      }
+    });
+    const bl = s?.markLine?.data?.[0]?.yAxis;
+    if (isNumeric(bl)) {
+      baselineValues.push(Number(bl));
+    }
+  });
+  const allY = [...yValues, ...baselineValues];
+  let yMin;
+  let yMax;
+  if (allY.length > 0) {
+    const minV = Math.min(...allY);
+    const maxV = Math.max(...allY);
+    const span = maxV - minV;
+    const pad = span > 0 ? span * 0.08 : Math.max(1, Math.abs(maxV) * 0.08);
+    yMin = minV - pad;
+    yMax = maxV + pad;
+  }
   return {
     color: OMNI_LINE_SERIES_PALETTE,
     animationDurationUpdate: 200,
     tooltip: {
-      trigger: "axis",
-      axisPointer: {
-        type: "line",
-        lineStyle: { color: pal.grid, width: 1 },
-      },
+      trigger: "item",
       formatter: formatOmniHistoryTooltipHtml,
     },
     legend: {
@@ -1060,6 +1088,8 @@ function buildOmniChartOption(metricGroup, records, groupFields, chartPointPerDa
     },
     yAxis: {
       type: "value",
+      min: yMin,
+      max: yMax,
       axisLabel: {
         formatter(value) {
           return Number(value).toFixed(2);

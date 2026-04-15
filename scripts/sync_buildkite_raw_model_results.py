@@ -1,6 +1,6 @@
 """Copy perf JSON artifacts from buildkite_nightly_raw into data/results/<model_name>.
 
-Recursively scans data/buildkite_nightly_raw for result_test_*.json and benchmark_results_*.json where either the
+Recursively scans data/buildkite_nightly_raw for result_test_*.json and diffusion/benchmark perf JSON where either the
 file path (POSIX) or the basename contains the given --model-keywords substring (so
 e.g. qwen3_tts matches .../result_test_qwen3_tts_* even when the parent path only
 mentions qwen3_omni).
@@ -55,7 +55,11 @@ def iter_source_files(raw_root: Path, model_keywords: str) -> list[Path]:
         return []
     needle = model_keywords
     out: list[Path] = []
-    for pattern in ("result_test_*.json", "benchmark_results_*.json"):
+    for pattern in (
+        "result_test_*.json",
+        "diffusion_result_*.json",
+        "benchmark_results_*.json",
+    ):
         for path in raw_root.rglob(pattern):
             if needle not in path.as_posix() and needle not in path.name:
                 continue

@@ -60,6 +60,11 @@ This dashboard tracks one daily snapshot per model and hardware combination for 
     <strong>Qwen Image Edit</strong>
     <span>E2E latency, peak memory</span>
   </a>
+  <a class="model-directory-card" href="models/qwen-image-edit-2509/">
+    <span class="model-directory-card__eyebrow">Image Editing</span>
+    <strong>Qwen Image Edit 2509</strong>
+    <span>E2E latency, peak memory</span>
+  </a>
   <a class="model-directory-card" href="models/wan22/">
     <span class="model-directory-card__eyebrow">Video Generation</span>
     <strong>WAN 2.2</strong>
