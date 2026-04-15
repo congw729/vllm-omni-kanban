@@ -942,11 +942,13 @@ function buildOmniMetricSeries(records, metric, groupFields, options) {
         };
       });
     if (points.length > 0) {
+      const n = points.length;
       const lineSeries = {
         name: buildSeriesLabel(items[0], groupFields),
         type: "line",
         triggerLineEvent: true,
-        showSymbol: points.length < 8,
+        showSymbol: true,
+        symbolSize: n <= 12 ? 6 : n <= 30 ? 4 : 3,
         smooth: false,
         data: points,
       };
@@ -973,8 +975,50 @@ function buildOmniMetricSeries(records, metric, groupFields, options) {
   return series;
 }
 
+/**
+ * Axis tooltip lists every line at the hovered date; item-only mode is weak when many series overlap.
+ * Symbols are always shown on lines (see `buildOmniMetricSeries`); axis trigger still reads well for comparison.
+ */
+function formatOmniHistoryTooltipHtml(rawParams) {
+  const rows = Array.isArray(rawParams) ? rawParams : rawParams != null ? [rawParams] : [];
+  const lineRows = rows.filter(
+    (p) => p && p.componentType === "series" && p.seriesType === "line" && p.data,
+  );
+  if (lineRows.length === 0) {
+    return "";
+  }
+  const axisVal =
+    lineRows[0].axisValue ?? lineRows[0].value?.[0] ?? lineRows[0].data?.value?.[0];
+  const header = `Date: ${escapeHtml(formatOmniHistoryChartDate(axisVal))}`;
+  const sections = lineRows.map((params) => {
+    const meta = params.data?.meta || {};
+    const val = params.data?.value?.[1];
+    const bl = meta.baseline;
+    const lines = [
+      `<strong>${escapeHtml(params.seriesName || "")}</strong>`,
+      `Value: ${formatMetricValue(val)}`,
+    ];
+    if (isNumeric(bl)) {
+      lines.push(`baseline: ${formatMetricValue(bl)}`);
+      const d = formatBaselineDeltaPct(val, bl);
+      if (d) {
+        lines.push(`vs baseline: ${escapeHtml(d)}`);
+      }
+    }
+    lines.push(
+      `Test: ${escapeHtml(meta.test_name || "--")}`,
+      `Dataset: ${escapeHtml(meta.dataset_name || "--")}`,
+      `Max concurrency: ${escapeHtml(String(meta.max_concurrency ?? "--"))}`,
+      `Num prompts: ${escapeHtml(String(meta.num_prompts ?? "--"))}`,
+    );
+    return lines.join("<br>");
+  });
+  return [header, ...sections].join("<br><br>");
+}
+
 function buildOmniChartOption(metricGroup, records, groupFields, chartPointPerDay) {
   const opts = { pointPerDay: chartPointPerDay !== false };
+  const pal = chartPalette();
   const series = applyOmniLineSeriesColors(
     metricGroup.metrics.flatMap((metric) => buildOmniMetricSeries(records, metric, groupFields, opts)),
   );
@@ -984,31 +1028,12 @@ function buildOmniChartOption(metricGroup, records, groupFields, chartPointPerDa
     color: OMNI_LINE_SERIES_PALETTE,
     animationDurationUpdate: 200,
     tooltip: {
-      trigger: "item",
-      formatter(params) {
-        const meta = params.data?.meta || {};
-        const val = params.data?.value?.[1];
-        const bl = meta.baseline;
-        const lines = [
-          `<strong>${escapeHtml(params.seriesName || "")}</strong>`,
-          `Date: ${escapeHtml(formatOmniHistoryChartDate(params.data?.value?.[0]))}`,
-          `Value: ${formatMetricValue(val)}`,
-        ];
-        if (isNumeric(bl)) {
-          lines.push(`baseline: ${formatMetricValue(bl)}`);
-          const d = formatBaselineDeltaPct(val, bl);
-          if (d) {
-            lines.push(`vs baseline: ${escapeHtml(d)}`);
-          }
-        }
-        lines.push(
-          `Test: ${escapeHtml(meta.test_name || "--")}`,
-          `Dataset: ${escapeHtml(meta.dataset_name || "--")}`,
-          `Max concurrency: ${escapeHtml(String(meta.max_concurrency ?? "--"))}`,
-          `Num prompts: ${escapeHtml(String(meta.num_prompts ?? "--"))}`,
-        );
-        return lines.join("<br>");
+      trigger: "axis",
+      axisPointer: {
+        type: "line",
+        lineStyle: { color: pal.grid, width: 1 },
       },
+      formatter: formatOmniHistoryTooltipHtml,
     },
     legend: {
       type: "scroll",
